@@ -1,10 +1,13 @@
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+  get "/conversions", to: "conversions#index"
+  post "/conversions", to: "conversions#create"
+  get "/conversions/:id", to: "conversions#show"
+  delete "/conversions/:id", to: "conversions#destroy"
+  get "/conversions/:id/source_image", to: "conversions#source_image"
 
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
-  get "up" => "rails/health#show", as: :rails_health_check
-
-  # Defines the root path route ("/")
-  # root "posts#index"
+  patch "/conversions/:conversion_id/bands/:band_id", to: "bands#update_kind"
+  post "/conversions/:conversion_id/bands/:band_id/merge", to: "bands#merge"
+  post "/conversions/:conversion_id/bands/:band_id/split", to: "bands#split"
+  post "/conversions/:conversion_id/bands/:band_id/remove", to: "bands#remove"
+  post "/conversions/:conversion_id/bands/:band_id/restore", to: "bands#restore"
 end
