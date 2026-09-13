@@ -19,6 +19,7 @@ ja:
     medium: "詳細を見る"
     long: "詳しく見る"
   nav_item: "メニュー項目"
+  nav_aria_label: "メインナビゲーション"
   testimonial_name: "ご利用者様"
   testimonial_role: "ご利用者様の所属"
   footer_copyright: "著作権表示のプレースホルダー"

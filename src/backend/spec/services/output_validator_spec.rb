@@ -43,6 +43,12 @@ RSpec.describe OutputValidator do
     expect(result.reasons).to include("img_missing_alt")
   end
 
+  it "rejects a document with a stray closing tag that has no matching opening tag" do
+    result = described_class.validate(wrap('<h1>t</h1><div>x</span><img src="x" alt="a">'))
+    expect(result).not_to be_valid
+    expect(result.reasons).to include("unbalanced_tags")
+  end
+
   it "rejects a document exceeding 6MB" do
     big = "a" * 7.megabytes
     result = described_class.validate(wrap(%(<h1>t</h1><img src="x" alt="a"><!--#{big}-->)))

@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { ConversionList } from "./ConversionList";
 import type { ConversionListItem } from "@/lib/types";
 
@@ -21,5 +21,38 @@ describe("ConversionList", () => {
     const links = screen.getAllByRole("link");
     expect(links[0]).toHaveAttribute("href", "/conversions/abc");
     expect(links[1]).toHaveAttribute("href", "/conversions/def");
+  });
+
+  it("asks for inline confirmation (not a native confirm()) before deleting, and calls onDelete only after confirming", () => {
+    const onDelete = vi.fn();
+    render(
+      <ConversionList
+        conversions={[{ id: "abc", state: "ready", created_at: "2026-01-01T00:00:00Z" }]}
+        onDelete={onDelete}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "削除" }));
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.getByText("この変換を削除しますか？")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "削除する" }));
+    expect(onDelete).toHaveBeenCalledWith("abc");
+  });
+
+  it("cancels the inline confirmation without calling onDelete", () => {
+    const onDelete = vi.fn();
+    render(
+      <ConversionList
+        conversions={[{ id: "abc", state: "ready", created_at: "2026-01-01T00:00:00Z" }]}
+        onDelete={onDelete}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "削除" }));
+    fireEvent.click(screen.getByRole("button", { name: "キャンセル" }));
+
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.queryByText("この変換を削除しますか？")).not.toBeInTheDocument();
   });
 });

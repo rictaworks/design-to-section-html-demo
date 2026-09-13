@@ -80,6 +80,17 @@ describe("ConversionPage", () => {
     await waitFor(() => expect(screen.getByText(/analysis_timeout/)).toBeInTheDocument());
   });
 
+  it("shows an inline error when the design image fails to load, instead of failing silently", async () => {
+    (api.getConversion as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(baseConversion);
+    (api.getSourceImageBlob as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error("network down")
+    );
+    render(<ConversionPage />);
+    await waitFor(() =>
+      expect(screen.getByText("デザイン画像の取得に失敗しました。")).toBeInTheDocument()
+    );
+  });
+
   it("calls updateBandKind when the band list's kind select changes", async () => {
     (api.getConversion as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(baseConversion);
     (api.updateBandKind as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(baseConversion);

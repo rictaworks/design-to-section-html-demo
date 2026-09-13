@@ -8,12 +8,15 @@ from pathlib import Path
 APP_DIR = Path(__file__).resolve().parent.parent / "app"
 
 # config.py以外でリテラルとして書かれていてはならない、6章由来の代表的しきい値
-FORBIDDEN_LITERALS = [r"\b1200\b", r"\b48\b", r"\b40\b", r"\b800\b", r"\b400\b", r"\b0\.05\b"]
+FORBIDDEN_LITERALS = [
+    r"\b1200\b", r"\b48\b", r"\b40\b", r"\b800\b", r"\b400\b", r"\b0\.05\b",
+    r"\b0\.6\b", r"\b0\.8\b", r"\b0\.35\b", r"\b0\.65\b", r"\b0\.4\b",
+]
 
 # これらのモジュールは6章のしきい値を直接扱うため対象とする
 # （classify.pyは採点式のローカルな重み配分[0.2〜0.5等]を多数持ち、6.6のしきい値
 #   [0.6/0.4]とは別概念のため対象から除外し、代わりに定数の参照有無を個別確認する）
-TARGET_MODULES = ["normalize.py", "segment.py", "blobs.py", "crop.py", "pipeline.py", "main.py"]
+TARGET_MODULES = ["normalize.py", "segment.py", "blobs.py", "features.py", "crop.py", "pipeline.py", "main.py"]
 
 
 def _strip_comments_and_strings(source: str) -> str:

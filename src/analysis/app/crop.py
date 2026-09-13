@@ -29,9 +29,13 @@ def _resize_long_edge(image, max_edge: int):
 
 
 def _encode_jpeg_base64(image) -> tuple:
+    # 予算(EmbedBudget)はHTMLへ実際に埋め込まれるサイズを管理するものなので、
+    # base64エンコード前の生JPEGバイト数ではなく、エンコード後の文字列長で計測する
+    # （base64はおよそ4/3倍に膨らむため、生バイト数で計測すると埋め込みサイズを過小評価する）。
     ok, buf = cv2.imencode(".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, config.CROP_JPEG_QUALITY])
     data = buf.tobytes()
-    return base64.b64encode(data).decode("ascii"), len(data)
+    b64 = base64.b64encode(data).decode("ascii")
+    return b64, len(b64)
 
 
 def crop_blob(original_image, work_scale: float, band_top_work: int, blob, budget: EmbedBudget) -> dict:

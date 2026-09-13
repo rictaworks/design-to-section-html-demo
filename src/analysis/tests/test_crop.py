@@ -56,6 +56,18 @@ def test_crop_shape_is_circle_for_circle_image_blob():
     assert result["shape"] == "circle"
 
 
+def test_budget_is_measured_on_the_base64_encoded_size_actually_embedded_in_html():
+    # 予算はHTMLへ埋め込まれるサイズ（base64文字列長）を基準にすること。
+    # base64化前の生JPEGバイト数で計測すると、実際の埋め込みサイズを約4/3倍過小評価してしまう。
+    original = blank_canvas(1000, 1000)
+    draw_image_blob(original, x=0, y=0, w=500, h=500, seed=5)
+    blob = make_blob(x=0, y=0, w=500, h=500)
+    budget = EmbedBudget()
+    result = crop_blob(original, work_scale=1.0, band_top_work=0, blob=blob, budget=budget)
+    assert result["placeholder"] is False
+    assert budget.used_bytes == len(result["image_base64"])
+
+
 def test_budget_tracks_cumulative_usage_across_calls():
     original = blank_canvas(1000, 1000)
     draw_image_blob(original, x=0, y=0, w=500, h=500, seed=4)

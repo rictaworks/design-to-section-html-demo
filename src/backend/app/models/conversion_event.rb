@@ -1,7 +1,7 @@
 class ConversionEvent < ApplicationRecord
   EVENT_TYPES = %w[
     created intake_rejected analysis_started analysis_succeeded analysis_timeout
-    analysis_unreachable assembled output_validation_failed ready reassembled
+    analysis_unreachable analysis_decode_failed assembled output_validation_failed ready reassembled
     band_updated interrupted deleted
   ].freeze
 

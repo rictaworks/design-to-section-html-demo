@@ -78,6 +78,10 @@ class BandsController < ApplicationController
   def set_band
     @band = @conversion.bands.find_by(id: params[:band_id])
     raise ActiveRecord::RecordNotFound if @band.nil?
+
+    if @band.state == "replaced"
+      render json: { error: ErrorCodes::BAND_REPLACED }, status: :unprocessable_content
+    end
   end
 
   def shift_positions_after(position, by:)
@@ -95,7 +99,9 @@ class BandsController < ApplicationController
     response[:bands] || []
   rescue AnalysisClient::TimeoutError
     render json: { error: ErrorCodes::ANALYSIS_TIMEOUT }, status: :unprocessable_content
-  rescue AnalysisClient::UnreachableError, AnalysisClient::DecodeFailedError
+  rescue AnalysisClient::UnreachableError
     render json: { error: ErrorCodes::ANALYSIS_UNREACHABLE }, status: :unprocessable_content
+  rescue AnalysisClient::DecodeFailedError
+    render json: { error: ErrorCodes::ANALYSIS_DECODE_FAILED }, status: :unprocessable_content
   end
 end

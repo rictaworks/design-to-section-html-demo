@@ -71,7 +71,7 @@ module ComponentCatalog
       <header class="#{p} #{p}--#{params[:variant]} #{text_color_class(p, params)}">
         <div class="#{p}__inner">
           <span class="#{p}__logo">#{h(ParameterExtractor.static(:nav_item))}</span>
-          <nav class="#{p}__nav" aria-label="メインナビゲーション">
+          <nav class="#{p}__nav" aria-label="#{h(ParameterExtractor.static(:nav_aria_label))}">
             <ul class="#{p}__nav-list">#{nav_items}</ul>
           </nav>
           #{button}
@@ -221,7 +221,7 @@ module ComponentCatalog
   def render_gallery(params)
     p = PREFIXES[SectionKinds::GALLERY]
     cols = params[:variant].split("_").last.to_i
-    count = [ cols * 2, 8 ].min
+    count = [ [ params[:repeat_count].to_i, cols ].max, 12 ].min
     crops = params[:crops] || []
     items = Array.new(count) { |i| %(<li class="#{p}__item">#{crop_image_tag(crops[i], css_class: "#{p}__image")}</li>) }.join
 

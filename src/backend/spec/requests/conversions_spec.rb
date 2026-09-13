@@ -54,6 +54,25 @@ RSpec.describe "Conversions API", type: :request do
       expect(body["failed_reason"]).to eq("analysis_unreachable")
     end
 
+    it "distinguishes a decode failure from a plain unreachable failure" do
+      stub_request(:post, %r{/v1/analyze}).to_return(status: 422, body: { error: "decode_failed" }.to_json)
+      upload
+      body = JSON.parse(response.body)
+      expect(body["failed_reason"]).to eq("analysis_decode_failed")
+    end
+
+    it "rejects new conversions while a daily reset is in progress" do
+      SystemState.begin_reset!
+      begin
+        upload
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(JSON.parse(response.body)["error"]).to eq("reset_in_progress")
+        expect(Conversion.count).to eq(0)
+      ensure
+        SystemState.end_reset!
+      end
+    end
+
     it "rejects a new conversion once 2 are already active for the same session" do
       stub_analysis_success
       upload # 最初のリクエストでセッションCookieを確立する（この時点でstateはready）

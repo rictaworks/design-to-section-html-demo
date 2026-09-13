@@ -2,6 +2,9 @@
 数値・文字列リテラルは本ファイルに集約し、他モジュールはここから import して使うこと。
 """
 
+# --- 6.2 受入検証（解析層の多層防御。主たる検証はアプリケーション層/Railsが行う） ---
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+
 # --- 6.3 正規化 ---
 WORK_WIDTH_MAX = 1200
 MOBILE_ASPECT_RATIO_THRESHOLD = 0.7
@@ -11,6 +14,9 @@ DARK_LUMINANCE_THRESHOLD = 128
 MIN_BAND_HEIGHT_PX = 48
 MAX_BANDS = 40
 HEADER_MAX_HEIGHT_RATIO = 0.08
+HEADER_BOUNDARY_MIN_LIMIT_PX = 4
+HEADER_BASELINE_TOLERANCE_RATIO = 0.6
+HEADER_BOTTOM_PADDING_PX = 4
 SIDEBAR_HEIGHT_RATIO = 0.8
 SIDEBAR_WIDTH_RATIO = 0.3
 BLANK_CONTENT_RATIO_THRESHOLD = 0.02
@@ -44,22 +50,35 @@ ICON_MIN_ASPECT = 0.7
 ICON_MAX_ASPECT = 1.4
 ICON_MAX_COLOR_STD = 15.0
 
+# --- 6.5 帯特徴（列数・画像位置・整列） ---
+COLUMN_GAP_MIN_PX = 40
+COLUMN_GAP_RATIO_OF_WIDTH = 0.05
+IMAGE_COVERAGE_RATIO = 0.8
+IMAGE_POSITION_LEFT_MAX_RATIO = 0.35
+IMAGE_POSITION_RIGHT_MIN_RATIO = 0.65
+ALIGNMENT_CENTER_MIN_RATIO = 0.4
+ALIGNMENT_CENTER_MAX_RATIO = 0.6
+
 # --- 6.6 種別判定 ---
 CONFIDENCE_ADOPT_THRESHOLD = 0.6
 CONFIDENCE_LOW_THRESHOLD = 0.4
 CONFIDENCE_CLOSE_DIFF = 0.05
+HERO_MAX_BANDS_FROM_TOP = 2  # ヘッダーを除く先頭から2帯以内
 
+# requirements.md 7章の12種別コード。アプリケーション層(Rails)のSectionKinds
+# （src/backend/lib/section_kinds.rb）と文字列を完全に一致させること
+# （解析層が返すdetected_kindをRailsのComponentCatalogが直接キーとして参照するため）。
 SECTION_KINDS = [
     "header",
     "hero",
-    "feature_list",
-    "image_and_text",
+    "features",
+    "image_with_text",
     "cta",
     "pricing",
-    "testimonial",
+    "testimonials",
     "faq",
     "gallery",
-    "logo_strip",
+    "logos",
     "footer",
     "generic_text",
 ]

@@ -23,7 +23,9 @@ class OutputValidator
     reasons = []
     reasons << "byte_size_exceeded" if @html.bytesize > MAX_BYTES
 
-    doc = Nokogiri::HTML5.parse(@html)
+    # Nokogiri::HTML5.parseはmax_errorsを指定しない限りdoc.errorsを常に空配列にする
+    # （デフォルト0件）ため、明示的に指定しないとタグ不整合検査が機能しない。
+    doc = Nokogiri::HTML5.parse(@html, max_errors: 100)
 
     reasons << "external_reference" if external_reference?(doc)
     reasons << "script_present" if script_present?(doc)
@@ -49,7 +51,7 @@ class OutputValidator
     end
   end
 
-  MISMATCH_PATTERN = /unexpected end tag|stray end tag|expected closing tag|unexpected-end-tag/i
+  MISMATCH_PATTERN = /unexpected end tag|stray end tag|expected closing tag|unexpected-end-tag|end tag .* isn't allowed here/i
 
   def balanced_tags?(doc)
     doc.errors.none? { |e| e.to_s.match?(MISMATCH_PATTERN) }

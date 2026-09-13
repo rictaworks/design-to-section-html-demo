@@ -86,11 +86,11 @@ def test_records_close_confidence_runner_up_when_top_two_within_0_05():
         assert any(n["notice_type"] == config.NOTICE_CLOSE_CONFIDENCE_RUNNER_UP for n in notices)
 
 
-def test_pricing_and_feature_list_both_rejected_when_missing_required_signal():
-    # 列数はあるがボタンもアイコンも無い曖昧な帯 → pricingにもfeature_listにも採用されない
+def test_pricing_and_features_both_rejected_when_missing_required_signal():
+    # 列数はあるがボタンもアイコンも無い曖昧な帯 → pricingにもfeaturesにも採用されない
     features = base_features(column_count=3, repeat_count=3, text_blob_count=3)
     kind, confidence, runner_up, notices = classify_band(features, allowed_kinds=config.SECTION_KINDS)
-    assert kind not in ("pricing", "feature_list")
+    assert kind not in ("pricing", "features")
 
 
 def test_pricing_adopted_when_each_column_has_button():
@@ -99,10 +99,10 @@ def test_pricing_adopted_when_each_column_has_button():
     assert kind == "pricing"
 
 
-def test_feature_list_adopted_when_each_item_has_icon():
+def test_features_adopted_when_each_item_has_icon():
     features = base_features(column_count=3, repeat_count=3, icon_blob_count=3, text_blob_count=6)
     kind, confidence, runner_up, notices = classify_band(features, allowed_kinds=config.SECTION_KINDS)
-    assert kind == "feature_list"
+    assert kind == "features"
 
 
 def test_is_deterministic():
