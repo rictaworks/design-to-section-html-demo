@@ -1,0 +1,24 @@
+# 変換パイプラインの数値しきい値（requirements.md 6章・9章・11章）。
+# コード側にマジックナンバーを直書きしないため、ここに集約する。
+default: &default
+  min_band_height_px: 48
+  max_band_count: 40
+  confidence_adopt_threshold: 0.6
+  confidence_low_threshold: 0.4
+  confidence_close_margin: 0.05
+  sidebar_max_width_px: 1024
+  max_active_conversions_per_session: 2
+  analysis_timeout_seconds: 30
+  output_max_bytes: 6291456 # 6 MB
+  embedding_budget_bytes: 4194304 # 4 MB
+  daily_reset_grace_period_seconds: 30
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+  daily_reset_grace_period_seconds: 0
+
+production:
+  <<: *default

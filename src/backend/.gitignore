@@ -1,0 +1,18 @@
+# bundle install --path
+/vendor/bundle/
+
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+.byebug_history
+
+/storage/*.sqlite3
+/storage/*.sqlite3-*
+/db/*.sqlite3
+/db/*.sqlite3-*
+
+/public/assets
+
+# 秘密情報（ルートの.gitignoreでも保護されるが、src/backend単体運用時のための多層防御）
+/config/master.key
