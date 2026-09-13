@@ -18,6 +18,10 @@ class DecodeError(ValueError):
     pass
 
 
+class InvalidRangeError(ValueError):
+    pass
+
+
 def decode_image_bytes(data: bytes) -> np.ndarray:
     try:
         pil_image = Image.open(io.BytesIO(data))
@@ -25,6 +29,12 @@ def decode_image_bytes(data: bytes) -> np.ndarray:
         pil_image = ImageOps.exif_transpose(pil_image)
     except Exception as exc:  # noqa: BLE001 - 画像デコード失敗はすべて422にまとめる
         raise DecodeError("decode_failed") from exc
+
+    # パレット形式(mode "P")のPNGはtRNSチャンクによる透過を持ちうるが、そのまま"RGB"へ
+    # convertすると透過情報が失われ（パレット上の色がそのまま不透明色として使われる）、
+    # 「透過は白へ合成する」（6.2）が働かない。先にRGBAへ変換し透過を復元してから扱う。
+    if pil_image.mode == "P":
+        pil_image = pil_image.convert("RGBA")
 
     if pil_image.mode == "RGBA":
         array = np.array(pil_image)
@@ -49,7 +59,19 @@ def _allowed_kinds(position: str, index: int, header_offset: int) -> list:
     return allowed
 
 
-def _classify_bands(work_image: np.ndarray, band_ranges: list, work_width: int, work_height: int) -> tuple:
+def _classify_bands(
+    work_image: np.ndarray,
+    band_ranges: list,
+    work_width: int,
+    work_height: int,
+    is_first: bool = True,
+    is_last: bool = True,
+) -> tuple:
+    # is_first/is_lastは「渡されたband_rangesの先頭・末尾が、ページ全体の先頭・末尾でもあるか」
+    # を示す。analyze()はページ全量を渡すため常にTrueでよいが、refeature()は帯編集で対象と
+    # なった一部の帯だけを渡すため、Rails側が知っているページ全体での位置関係を受け取って
+    # 判定する必要がある（さもないと、ページ中間の帯を分割しただけで一方がheader/footerの
+    # 候補になってしまう）。
     bands_out = []
     notices = []
     accent_fallback = None
@@ -57,7 +79,12 @@ def _classify_bands(work_image: np.ndarray, band_ranges: list, work_width: int, 
 
     for index, (top, bottom) in enumerate(band_ranges):
         band_image = work_image[top:bottom, :]
-        position = "first" if index == 0 else ("last" if index == total - 1 else "other")
+        if index == 0 and is_first:
+            position = "first"
+        elif index == total - 1 and is_last:
+            position = "last"
+        else:
+            position = "other"
 
         features, blobs = extract_band_features(
             band_image, position, work_width, work_height, top, bottom, accent_fallback
@@ -146,7 +173,13 @@ def analyze(image_bytes: bytes) -> dict:
     }
 
 
-def refeature(image_base64: str, work_scale: float, ranges: list) -> dict:
+def refeature(
+    image_base64: str,
+    work_scale: float,
+    ranges: list,
+    is_first_band: bool = True,
+    is_last_band: bool = True,
+) -> dict:
     import base64
 
     original_bytes = base64.b64decode(image_base64)
@@ -159,7 +192,13 @@ def refeature(image_base64: str, work_scale: float, ranges: list) -> dict:
     work_image = cv2.resize(original_image[:, :, :3], (work_width, work_height), interpolation=cv2.INTER_AREA)
 
     band_ranges = [(int(r["top_y"]), int(r["bottom_y"])) for r in ranges]
-    bands_out, notices = _classify_bands(work_image, band_ranges, work_width, work_height)
+    for top, bottom in band_ranges:
+        if not (0 <= top < bottom <= work_height):
+            raise InvalidRangeError(f"invalid range top_y={top} bottom_y={bottom} work_height={work_height}")
+
+    bands_out, notices = _classify_bands(
+        work_image, band_ranges, work_width, work_height, is_first=is_first_band, is_last=is_last_band
+    )
     _attach_crops(original_image[:, :, :3], work_scale, bands_out, notices)
 
     return {"bands": bands_out, "notices": notices}

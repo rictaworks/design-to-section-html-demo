@@ -44,6 +44,10 @@ BUTTON_MIN_WIDTH_PX = 40
 BUTTON_MAX_WIDTH_PX = 320
 BUTTON_MIN_HEIGHT_PX = 20
 BUTTON_MAX_HEIGHT_PX = 80
+# ボタン状は「内部に文字状ブロブを1つ含む」（6.5）。前景マスクの充填率が外接矩形の面積に
+# ほぼ等しい（＝内部に穴＝ラベルが無い）場合は、単なる無地の矩形（見出し等）とみなし
+# ボタンとしない。
+BUTTON_MAX_FILL_RATIO = 0.95
 
 ICON_MAX_SIZE_PX = 32
 ICON_MIN_ASPECT = 0.7

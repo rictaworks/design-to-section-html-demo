@@ -47,3 +47,28 @@ def test_refeature_endpoint_returns_200_with_bands():
     assert res.status_code == 200
     body = res.json()
     assert len(body["bands"]) == 1
+
+
+def test_refeature_endpoint_returns_422_for_an_invalid_range_instead_of_a_500():
+    b64 = base64.b64encode(_sample_png_bytes()).decode("ascii")
+    res = client.post(
+        "/v1/refeature",
+        json={"image_base64": b64, "work_scale": 1.0, "ranges": [{"top_y": 500, "bottom_y": 200}]},
+    )
+    assert res.status_code == 422
+    assert res.json()["detail"]["error"] == "invalid_range"
+
+
+def test_refeature_endpoint_accepts_is_first_band_and_is_last_band_flags():
+    b64 = base64.b64encode(_sample_png_bytes()).decode("ascii")
+    res = client.post(
+        "/v1/refeature",
+        json={
+            "image_base64": b64,
+            "work_scale": 1.0,
+            "ranges": [{"top_y": 0, "bottom_y": 1000}],
+            "is_first_band": False,
+            "is_last_band": False,
+        },
+    )
+    assert res.status_code == 200

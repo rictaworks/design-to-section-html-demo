@@ -108,6 +108,20 @@ def classify_blob(blob: Blob, band_height: int, band_width: int, bg_color: tuple
     ):
         return "icon"
 
+    # ボタン状の条件（幅・高さ・彩度・コントラストすべてを要求）は文字状より狭く具体的なため、
+    # 先に判定する。文字状を先に判定すると、帯が大きく text_max_height が40px近くまで
+    # 緩む場合に、典型的なCTAボタン（高さ20〜40px程度）が文字状として誤判定され、
+    # button_blob_count が過小評価されてしまう（CTA/pricing/hero判定の精度に直結する）。
+    fill_ratio = blob.area / max(1, blob.w * blob.h)
+    if (
+        config.BUTTON_MIN_WIDTH_PX <= blob.w <= config.BUTTON_MAX_WIDTH_PX
+        and config.BUTTON_MIN_HEIGHT_PX <= blob.h <= config.BUTTON_MAX_HEIGHT_PX
+        and blob.color_std <= config.BUTTON_MAX_COLOR_STD
+        and _contrast(blob.mean_color, bg_color) >= config.BUTTON_MIN_CONTRAST
+        and fill_ratio <= config.BUTTON_MAX_FILL_RATIO
+    ):
+        return "button"
+
     text_max_height = min(config.TEXT_MAX_HEIGHT_PX, band_height * config.TEXT_MAX_HEIGHT_RATIO_OF_BAND)
     if (
         blob.h <= text_max_height
@@ -115,14 +129,6 @@ def classify_blob(blob: Blob, band_height: int, band_width: int, bg_color: tuple
         and blob.color_std <= config.TEXT_MAX_COLOR_STD
     ):
         return "text"
-
-    if (
-        config.BUTTON_MIN_WIDTH_PX <= blob.w <= config.BUTTON_MAX_WIDTH_PX
-        and config.BUTTON_MIN_HEIGHT_PX <= blob.h <= config.BUTTON_MAX_HEIGHT_PX
-        and blob.color_std <= config.BUTTON_MAX_COLOR_STD
-        and _contrast(blob.mean_color, bg_color) >= config.BUTTON_MIN_CONTRAST
-    ):
-        return "button"
 
     return None
 

@@ -35,8 +35,11 @@ module ImageFixtures
     (soi + app0 + sof0 + eoi).b
   end
 
+  # animated: trueの場合、VP8X拡張ヘッダーのANIMATIONフラグ(bit1)とANIMチャンクの両方を
+  # 付与する。vp8x_only_animation_flag_webp_bytesはANIMチャンクを付けずVP8Xフラグのみを
+  # 立てる（IntakeValidator#vp8x_animation_flag?のビット判定単体を検証するため）。
   def webp_bytes(width: 10, height: 10, animated: false)
-    flags = animated ? 0b00010000 : 0b00000000 # bit4: ANIMATION
+    flags = animated ? 0b00000010 : 0b00000000 # bit1: ANIMATION
     vp8x = "VP8X".b + [ 10 ].pack("V").b +
       [ flags ].pack("C").b + "\x00\x00\x00".b +
       [ width - 1 ].pack("V").b[0, 3] + [ height - 1 ].pack("V").b[0, 3]
@@ -44,6 +47,14 @@ module ImageFixtures
     payload += "ANIM".b + [ 4 ].pack("V").b + [ 0x000000 ].pack("V").b if animated
 
     ("RIFF".b + [ payload.bytesize + 4 ].pack("V").b + "WEBP".b + payload).b
+  end
+
+  def vp8x_only_animation_flag_webp_bytes(width: 10, height: 10)
+    flags = 0b00000010 # bit1: ANIMATION（ANIMチャンクは付けない）
+    vp8x = "VP8X".b + [ 10 ].pack("V").b +
+      [ flags ].pack("C").b + "\x00\x00\x00".b +
+      [ width - 1 ].pack("V").b[0, 3] + [ height - 1 ].pack("V").b[0, 3]
+    ("RIFF".b + [ vp8x.bytesize + 4 ].pack("V").b + "WEBP".b + vp8x).b
   end
 
   def corrupted_png_bytes

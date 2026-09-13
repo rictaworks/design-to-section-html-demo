@@ -12,6 +12,7 @@ export interface UploadFormProps {
 
 export function UploadForm({ onUploaded }: UploadFormProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [honeypot, setHoneypot] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +26,7 @@ export function UploadForm({ onUploaded }: UploadFormProps) {
     setSubmitting(true);
     setError(null);
     try {
-      const conversion = await createConversion(file);
+      const conversion = await createConversion(file, honeypot);
       onUploaded(conversion);
     } catch (err) {
       const code = err instanceof ApiError ? err.code : "unknown";
@@ -60,6 +61,8 @@ export function UploadForm({ onUploaded }: UploadFormProps) {
         id="website"
         name="website"
         type="text"
+        value={honeypot}
+        onChange={(e) => setHoneypot(e.target.value)}
         tabIndex={-1}
         autoComplete="off"
         style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}
