@@ -10,6 +10,7 @@ Rails.application.configure do
   config.eager_load = false
 
   # Show full error reports.
+  # nosemgrep: ruby.rails.security.audit.detailed-exceptions.detailed-exceptions -- 開発環境のみ有効。production.rbはfalse（config/environments/production.rb参照）
   config.consider_all_requests_local = true
 
   # Enable server timing.
