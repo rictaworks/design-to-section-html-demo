@@ -1,0 +1,34 @@
+# 生成物（HTML初稿）に埋め込むプレースホルダ文言。
+# デザイン画像から読み取った実文字は一切使用しない（requirements.md 6.7・6.8）。
+# 証言の氏名欄・フッターの著作権表示欄は実在の氏名・組織名を含めない（7章）。
+ja:
+  heading:
+    short: "見出しのプレースホルダー"
+    medium: "見出しのプレースホルダーです"
+    long: "ここには見出しのプレースホルダーが入ります"
+  subheading:
+    short: "小見出し"
+    medium: "小見出しのプレースホルダー"
+    long: "ここには小見出しのプレースホルダーが入ります"
+  body:
+    short: "本文のプレースホルダーです。"
+    medium: "本文のプレースホルダーです。実際の文章に差し替えてください。"
+    long: "本文のプレースホルダーです。実際の文章に差し替えてご利用ください。この文章は初稿の仮のものです。"
+  button:
+    short: "詳細"
+    medium: "詳細を見る"
+    long: "詳しく見る"
+  nav_item: "メニュー項目"
+  testimonial_name: "ご利用者様"
+  testimonial_role: "ご利用者様の所属"
+  footer_copyright: "著作権表示のプレースホルダー"
+  footer_column_heading: "リンク見出し"
+  footer_link: "リンク項目"
+  faq_question: "質問項目のプレースホルダーです"
+  faq_answer: "回答のプレースホルダーです。実際の内容に差し替えてください。"
+  pricing_plan_name: "プラン名"
+  pricing_price: "¥0"
+  pricing_feature: "特徴項目"
+  image_alt: "画像のプレースホルダー"
+  document_title: "ページタイトルのプレースホルダー"
+  heading_fallback: "見出しのプレースホルダー"

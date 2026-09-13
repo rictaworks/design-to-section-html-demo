@@ -25,6 +25,15 @@ gem "bootsnap", require: false
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin Ajax possible
 gem "rack-cors"
 
+# HTML構造検証（生成物検証6.9）に使う
+gem "nokogiri"
+
+# json 3.x はActiveSupportのJSONデコーダと非互換のため2系に固定する
+gem "json", "~> 2.9"
+
+# 画像の寸法取得（外部バイナリ不要。受入検証6.2で使う）
+gem "fastimage"
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
