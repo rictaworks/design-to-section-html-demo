@@ -43,7 +43,7 @@ export interface Band {
 export interface Notice {
   id: string;
   notice_type: string;
-  detail: string;
+  detail: Record<string, unknown>;
   band_id: string | null;
 }
 
