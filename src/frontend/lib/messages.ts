@@ -33,6 +33,8 @@ export const messages = {
     not_found: "指定の変換が見つかりませんでした。",
     non_adjacent_merge_rejected: "隣接していない帯は結合できません。",
     split_too_close_to_edge: "帯の端に近すぎる位置では分割できません。",
+    band_replaced: "この帯はすでに結合・分割により置き換えられており、操作できません。画面を更新してください。",
+    reset_in_progress: "日次リセット中のため、しばらくしてから再度お試しください。",
     network: "通信に失敗しました。通信環境を確認して再度お試しください。",
     unknown: "処理に失敗しました。時間をおいて再度お試しください。",
   },

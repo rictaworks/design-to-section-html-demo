@@ -4,6 +4,8 @@ class ConversionsController < ApplicationController
   # 同時アクティブ件数チェックと作成の間のTOCTOUを防ぐ、セッションごとのプロセス内ロック。
   # SQLiteはSELECT ... FOR UPDATEを解釈しないため、DBロックではなくプロセス内Mutexで直列化する
   # （単一プロセスのデモ運用を前提としたKISSな対策。同一セッション内の競合のみが対象）。
+  # セッションごとにエントリが増え続け明示的な削除は行わない。日次リセットでプロセスごと
+  # 再起動される運用を前提としたデモ版のトレードオフとして許容する（YAGNI）。
   ACTIVE_COUNT_MUTEXES = Concurrent::Map.new
 
   class ActiveConversionLimitExceeded < StandardError; end
