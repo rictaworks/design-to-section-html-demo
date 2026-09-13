@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import ConversionPage from "./page";
 import * as api from "@/lib/api";
 import type { Conversion } from "@/lib/types";
+import { messages } from "@/lib/messages";
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({ id: "conv-1" }),
@@ -81,7 +82,11 @@ describe("ConversionPage", () => {
       output: null,
     });
     render(<ConversionPage />);
-    await waitFor(() => expect(screen.getByText(/analysis_timeout/)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByText(`${messages.result.failedReasonPrefix}${messages.errors.analysis_timeout}`)
+      ).toBeInTheDocument()
+    );
   });
 
   it("shows an inline error when the design image fails to load, instead of failing silently", async () => {

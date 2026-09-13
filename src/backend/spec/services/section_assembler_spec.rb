@@ -61,4 +61,25 @@ RSpec.describe SectionAssembler do
     result = described_class.assemble(conversion.reload)
     expect(result.notices.map { |n| n[:notice_type] }).to include(NoticeTypes::VARIANT_MISMATCH_FALLBACK)
   end
+
+  it "declares circle crops as image/jpeg, matching the JPEG bytes the analysis layer always encodes (crop.py has no PNG path)" do
+    conversion = create(:conversion)
+    hero = create(:band, conversion: conversion, position: 0, detected_kind: SectionKinds::HERO,
+      variant: "image_left", features: { "image_position" => "left" })
+    create(:band_crop, band: hero, shape: "circle", body: "\xFF\xD8\xFF".b)
+
+    html = described_class.assemble(conversion.reload).html
+    expect(html).not_to include("data:image/png")
+    expect(html).to include("data:image/jpeg;base64,")
+  end
+
+  it "renders the real extracted avatar crop for testimonials, not the generic placeholder" do
+    conversion = create(:conversion)
+    testimonials = create(:band, conversion: conversion, position: 0, detected_kind: SectionKinds::TESTIMONIALS,
+      variant: "col_1", features: { "repeat_count" => 1 })
+    create(:band_crop, band: testimonials, shape: "circle", body: "\xFF\xD8\xFF".b)
+
+    html = described_class.assemble(conversion.reload).html
+    expect(html).to match(%r{<img src="data:image/jpeg;base64,[^"]+" alt="[^"]*" class="d2h-testimonials__avatar">})
+  end
 end

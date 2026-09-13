@@ -144,7 +144,7 @@ export default function ConversionPage() {
         {conversion.failed_reason && (
           <InlineMessage
             kind="error"
-            message={`${messages.result.failedReasonPrefix}${conversion.failed_reason}`}
+            message={`${messages.result.failedReasonPrefix}${errorMessage(conversion.failed_reason)}`}
           />
         )}
         {error && <InlineMessage kind="error" message={error} />}
