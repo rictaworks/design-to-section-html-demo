@@ -45,6 +45,7 @@ class SectionAssembler
       @notices << { notice_type: NoticeTypes::VARIANT_MISMATCH_FALLBACK, band_id: band.id,
                      detail: { kind: band.kind } }
     end
+    band.update_column(:variant, resolution.variant) if band.variant != resolution.variant
 
     crops = band.band_crops.map { |c| crop_param(c) }
 

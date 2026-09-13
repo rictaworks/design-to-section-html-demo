@@ -1,4 +1,4 @@
-import { messages } from "@/lib/messages";
+import { messages, noticeText } from "@/lib/messages";
 import type { Notice } from "@/lib/types";
 
 export interface NoticeListProps {
@@ -14,7 +14,7 @@ export function NoticeList({ notices }: NoticeListProps) {
     <ul className="flex flex-col gap-1">
       {notices.map((notice) => (
         <li key={notice.id} className="text-sm text-amber-800">
-          {notice.detail}
+          {noticeText(notice)}
         </li>
       ))}
     </ul>

@@ -108,7 +108,9 @@ class ConversionPipeline
         if relative_position.nil?
           nil
         else
-          conversion.bands.find_by(position: position_offset + relative_position)&.id
+          # replaced帯はpositionを変えずに残るため、find_byがstateを見ないと同じpositionの
+          # 新しい帯ではなく置換済みの旧帯を返すことがある。listedスコープで除外する。
+          conversion.bands.listed.find_by(position: position_offset + relative_position)&.id
         end
 
       conversion.notices.create!(
@@ -136,7 +138,7 @@ class ConversionPipeline
 
     position = notice[:band_position]
     return nil if position.nil?
-    conversion.bands.find_by(position: position)&.id
+    conversion.bands.listed.find_by(position: position)&.id
   end
 
   def self.fail_conversion!(conversion, notice_type, reason)

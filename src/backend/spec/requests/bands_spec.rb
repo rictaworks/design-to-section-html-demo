@@ -61,6 +61,40 @@ RSpec.describe "Bands API", type: :request do
       expect(updated["bands"].map { |b| b["id"] }).not_to include(a_id, b_id)
       expect(updated["bands"].size).to eq(2) # merged band + footer
     end
+
+    it "still recognizes the page's true last band after an earlier merge left a replaced band's stale position behind" do
+      # hero(position1)とfooter(position2、末尾)を結合すると、footerはstate=replacedのまま
+      # position=2に留まる。以後の帯（存在しない）へのshiftは発生しないため、置換済み帯の
+      # 古いpositionが「見かけ上の最大position」として残り、後続操作のis_last_band判定を
+      # 誤らせる可能性がある。
+      body = create_ready_conversion
+      hero_id = body["bands"][1]["id"]
+      footer_id = body["bands"][2]["id"]
+
+      stub_refeature_success(bands: [
+        { top_y: 80, bottom_y: 1000, detected_kind: SectionKinds::FOOTER, confidence: 0.7,
+          runner_up_kind: nil, features: { column_count: 1 }, crops: [] }
+      ])
+      post "/conversions/#{body['id']}/bands/#{hero_id}/merge", params: { with: footer_id }
+      expect(response).to have_http_status(:ok)
+      merged = JSON.parse(response.body)
+      merged_band_id = (merged["bands"].map { |b| b["id"] } - [ body["bands"][0]["id"] ]).first
+
+      stub_refeature_success(bands: [
+        { top_y: 80, bottom_y: 500, detected_kind: SectionKinds::GENERIC_TEXT, confidence: 0.5,
+          runner_up_kind: nil, features: { alignment: "left" }, crops: [] },
+        { top_y: 500, bottom_y: 1000, detected_kind: SectionKinds::FOOTER, confidence: 0.6,
+          runner_up_kind: nil, features: { column_count: 1 }, crops: [] }
+      ])
+      post "/conversions/#{body['id']}/bands/#{merged_band_id}/split", params: { y: 500 }
+      expect(response).to have_http_status(:ok)
+
+      expect(
+        a_request(:post, %r{/v1/refeature}).with(
+          body: hash_including("is_last_band" => true)
+        )
+      ).to have_been_made.at_least_once
+    end
   end
 
   describe "POST .../split" do
@@ -113,6 +147,33 @@ RSpec.describe "Bands API", type: :request do
       new_second_band = Band.find_by(conversion_id: body["id"], position: 3)
       notice = Notice.find_by(conversion_id: body["id"], notice_type: NoticeTypes::LOW_CONFIDENCE_KIND)
       expect(notice.band_id).to eq(new_second_band.id)
+    end
+
+    it "attaches a refeature notice to the new band even when it lands on the same position the replaced band still occupies" do
+      # 分割元の帯（末尾, position 2）はstate="replaced"になるだけでpositionは変わらず維持
+      # されるため、position_offset(2)+0=2 の位置には「新しい先頭側の帯」と「置換済みの旧帯」
+      # の2件が同じpositionで存在しうる。notice解決がstateを見ずにfind_byするとどちらが
+      # 返るか不定・あるいは旧帯を誤って返す可能性がある。
+      body = create_ready_conversion
+      footer_id = body["bands"][2]["id"] # position 2（末尾の帯）
+
+      stub_refeature_success(
+        bands: [
+          { top_y: 800, bottom_y: 900, detected_kind: SectionKinds::GENERIC_TEXT, confidence: 0.5,
+            runner_up_kind: nil, features: { alignment: "left" }, crops: [] },
+          { top_y: 900, bottom_y: 1000, detected_kind: SectionKinds::FOOTER, confidence: 0.6,
+            runner_up_kind: nil, features: { column_count: 1 }, crops: [] }
+        ],
+        notices: [ { notice_type: NoticeTypes::LOW_CONFIDENCE_KIND, band_position: 0, detail: {} } ]
+      )
+
+      post "/conversions/#{body['id']}/bands/#{footer_id}/split", params: { y: 900 }
+      expect(response).to have_http_status(:ok)
+
+      new_first_band = Band.find_by(conversion_id: body["id"], position: 2, state: "detected")
+      notice = Notice.find_by(conversion_id: body["id"], notice_type: NoticeTypes::LOW_CONFIDENCE_KIND)
+      expect(notice.band_id).to eq(new_first_band.id)
+      expect(Band.find(notice.band_id).state).not_to eq("replaced")
     end
 
     it "tells the analysis layer whether the split band is the page's true first/last band, not just first/last within the request" do
