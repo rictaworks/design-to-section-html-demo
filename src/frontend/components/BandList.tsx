@@ -95,7 +95,7 @@ export function BandList({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              {next && !removed && (
+              {next && !removed && next.state !== "removed" && (
                 <button
                   type="button"
                   onClick={() => onMerge(band.id, next.id)}

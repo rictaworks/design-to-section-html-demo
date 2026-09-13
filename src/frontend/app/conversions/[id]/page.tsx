@@ -84,10 +84,12 @@ export default function ConversionPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let objectUrl: string | null = null;
     getSourceImageBlob(id)
       .then((blob) => {
         if (!cancelled) {
-          setImageUrl(URL.createObjectURL(blob));
+          objectUrl = URL.createObjectURL(blob);
+          setImageUrl(objectUrl);
           setImageError(null);
         }
       })
@@ -98,6 +100,8 @@ export default function ConversionPage() {
       });
     return () => {
       cancelled = true;
+      // idが変わる/アンマウント時にobject URLを解放しないとメモリリークする
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [id]);
 

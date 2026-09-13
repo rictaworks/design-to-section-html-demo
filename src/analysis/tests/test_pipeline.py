@@ -1,10 +1,13 @@
 import base64
+import io
 
 import cv2
 import numpy as np
 import pytest
 
-from app.pipeline import analyze, refeature, DecodeError, _allowed_kinds
+from PIL import Image
+
+from app.pipeline import analyze, refeature, DecodeError, InvalidRangeError, _allowed_kinds
 from tests.fixtures.synth import blank_canvas, draw_text_line, draw_image_blob, encode_png
 
 
@@ -84,3 +87,54 @@ def test_refeature_returns_bands_for_given_ranges():
     assert len(result["bands"]) == 2
     assert result["bands"][0]["position"] == 0
     assert result["bands"][1]["position"] == 1
+
+
+def test_refeature_rejects_a_zero_or_negative_height_range_instead_of_raising_an_unhandled_error():
+    data = _sample_design_png()
+    b64 = base64.b64encode(data).decode("ascii")
+    with pytest.raises(InvalidRangeError):
+        refeature(b64, work_scale=1.0, ranges=[{"top_y": 500, "bottom_y": 500}])
+    with pytest.raises(InvalidRangeError):
+        refeature(b64, work_scale=1.0, ranges=[{"top_y": 500, "bottom_y": 100}])
+
+
+def test_refeature_only_allows_header_footer_at_the_true_page_edges_not_just_the_first_last_range():
+    # ページ中間の帯を分割した場合、その2帯のどちらもheader/footerの候補になってはならない
+    # （is_first_band/is_last_bandを両方Falseにして呼び出す＝Rails側が「これはページ中間の
+    #   編集」と伝えるケース）。
+    data = _sample_design_png()
+    b64 = base64.b64encode(data).decode("ascii")
+    result = refeature(
+        b64,
+        work_scale=1.0,
+        ranges=[{"top_y": 520, "bottom_y": 1000}, {"top_y": 1000, "bottom_y": 1600}],
+        is_first_band=False,
+        is_last_band=False,
+    )
+    kinds = [b["detected_kind"] for b in result["bands"]]
+    assert "header" not in kinds
+    assert "footer" not in kinds
+
+
+def test_decode_image_bytes_preserves_palette_png_transparency_as_an_alpha_channel():
+    # パレット(mode "P")かつtRNS透過を持つPNGを作る：インデックス0を透過色として登録し、
+    # 全面をインデックス0で塗る（＝全面透過、色は黒）。
+    # convert("RGB")へ直行すると透過情報が失われ、パレット色（黒）がそのまま不透明色になる。
+    # 先にRGBAへ変換していれば、デコード結果はアルファ付き(4ch)になり、白へ合成すると
+    # 黒ではなく白に近い色になるはず。
+    from app.pipeline import decode_image_bytes
+    from app.normalize import composite_alpha_on_white
+
+    img = Image.new("P", (20, 20))
+    palette = [0, 0, 0] + [0] * (255 * 3)  # インデックス0=黒
+    img.putpalette(palette)
+    img.info["transparency"] = 0
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+
+    decoded = decode_image_bytes(buf.getvalue())
+    assert decoded.shape[2] == 4  # 透過情報がアルファチャンネルとして残っている
+
+    composited = composite_alpha_on_white(decoded)
+    mean_color = composited.reshape(-1, composited.shape[2])[:, :3].mean(axis=0)
+    assert all(c > 200 for c in mean_color)  # 白背景に合成されている（黒のままなら透過漏れ）

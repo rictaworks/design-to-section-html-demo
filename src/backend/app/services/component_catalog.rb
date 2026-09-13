@@ -271,7 +271,7 @@ module ComponentCatalog
     end.join
 
     <<~HTML.strip
-      <footer class="#{p} #{text_color_class(p, params)}">
+      <footer class="#{p} #{p}--#{params[:variant]} #{text_color_class(p, params)}">
         <div class="#{p}__columns">#{columns}</div>
         <p class="#{p}__copyright">#{h(ParameterExtractor.static(:footer_copyright))}</p>
       </footer>

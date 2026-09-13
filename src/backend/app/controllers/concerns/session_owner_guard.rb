@@ -32,9 +32,14 @@ module SessionOwnerGuard
         user_agent_class: classify_user_agent,
         last_seen_at: Time.current
       )
+      # ブラウザ仕様上、SameSite=None のCookieはSecure（HTTPS）でなければ拒否される。
+      # 本番はフロントエンド(Vercel)とアプリケーション層(Railway)が別ドメインの真のクロス
+      # サイトでHTTPS配信のためSameSite=None; Secureが必要（requirements.md 2.3・21章）。
+      # 開発環境はフロントエンド・アプリケーション層とも localhost の別ポートであり、
+      # SameSite判定上は「同一サイト」に該当するため、Secure不要なSameSite=Laxで足りる。
       cookies.signed[SESSION_COOKIE_KEY] = {
         value: session_id,
-        same_site: :none,
+        same_site: Rails.env.production? ? :none : :lax,
         secure: Rails.env.production?,
         httponly: true
       }
