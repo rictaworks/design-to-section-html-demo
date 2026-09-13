@@ -35,15 +35,27 @@ module ComponentCatalog
     ERB::Util.html_escape(text.to_s)
   end
 
+  # data_uri はモジュール内部（section_assembler.rbのBase64埋め込み・placeholder_data_uri）でのみ
+  # 生成される値だが、img srcへの属性埋め込みで想定外の文字（" や <）が紛れないことを構造的に保証する
+  # ための防御的な形式検証（release-security-gate 工程D raw-html-format指摘への対応）。
+  DATA_URI_ALLOWED = %r{\Adata:image/(?:png|jpeg|webp|svg\+xml)(?:;charset=[\w-]+)?;(?:base64,[A-Za-z0-9+/]*={0,2}|utf8,[^"'<>]*)\z}.freeze
+
+  def safe_data_uri(data_uri)
+    DATA_URI_ALLOWED.match?(data_uri.to_s) ? data_uri : placeholder_data_uri
+  end
+
+  def placeholder_data_uri
+    "data:image/svg+xml;utf8,#{ERB::Util.url_encode('<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"/>')}"
+  end
+
   def image_tag(data_uri, alt, css_class: nil)
     cls = css_class ? %( class="#{h(css_class)}") : ""
-    %(<img src="#{data_uri}" alt="#{h(alt)}"#{cls}>)
+    %(<img src="#{safe_data_uri(data_uri)}" alt="#{h(alt)}"#{cls}>)
   end
 
   def placeholder_image_tag(alt, css_class: nil)
     # 埋め込み予算超過時のプレースホルダ（requirements.md 6.7）：無地のdata URIを用いる
-    data_uri = "data:image/svg+xml;utf8,#{ERB::Util.url_encode('<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"/>')}"
-    image_tag(data_uri, alt, css_class: css_class)
+    image_tag(placeholder_data_uri, alt, css_class: css_class)
   end
 
   def crop_image_tag(crop, css_class: nil)
@@ -65,6 +77,7 @@ module ComponentCatalog
     nav_count = [ [ params[:repeat_count].to_i, 3 ].max, 6 ].min
     nav_items = Array.new(nav_count) { %(<li class="#{p}__nav-item">#{h(ParameterExtractor.static(:nav_item))}</li>) }.join
 
+    # nosemgrep: ruby.rails.security.injection.raw-html-format.raw-html-format -- 差し込み値はh()でエスケープ済みのプレースホルダ文言のみ（デザイン画像由来の文字は使わない。requirements.md 6.8）
     button = params[:variant] == "with_button" ? %(<a class="#{p}__button" href="#">#{h(ParameterExtractor.placeholder(:button, params[:features], size: :short))}</a>) : ""
 
     <<~HTML.strip
@@ -82,6 +95,7 @@ module ComponentCatalog
 
   def render_hero(params)
     p = PREFIXES[SectionKinds::HERO]
+    # nosemgrep: ruby.rails.security.injection.raw-html-format.raw-html-format -- crop_image_tagはsafe_data_uriで形式検証済みのdata URIとh()済みaltのみを埋め込む
     image = params[:variant] == "no_image" ? "" : %(<div class="#{p}__media">#{crop_image_tag(params[:primary_crop], css_class: "#{p}__image")}</div>)
 
     <<~HTML.strip
@@ -224,6 +238,7 @@ module ComponentCatalog
     cols = params[:variant].split("_").last.to_i
     count = [ [ params[:repeat_count].to_i, cols ].max, 12 ].min
     crops = params[:crops] || []
+    # nosemgrep: ruby.rails.security.injection.raw-html-format.raw-html-format -- crop_image_tagはsafe_data_uriで形式検証済みのdata URIのみを埋め込む
     items = Array.new(count) { |i| %(<li class="#{p}__item">#{crop_image_tag(crops[i], css_class: "#{p}__image")}</li>) }.join
 
     <<~HTML.strip
@@ -238,6 +253,7 @@ module ComponentCatalog
     p = PREFIXES[SectionKinds::LOGOS]
     count = [ [ params[:repeat_count].to_i, 4 ].max, 8 ].min
     crops = params[:crops] || []
+    # nosemgrep: ruby.rails.security.injection.raw-html-format.raw-html-format -- crop_image_tagはsafe_data_uriで形式検証済みのdata URIのみを埋め込む
     items = Array.new(count) { |i| %(<li class="#{p}__item">#{crop_image_tag(crops[i], css_class: "#{p}__logo")}</li>) }.join
 
     <<~HTML.strip
