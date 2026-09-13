@@ -16,12 +16,16 @@ module ConversionPresenter
       failed_reason: conversion.failed_reason,
       created_at: conversion.created_at,
       bands: conversion.bands.listed.map { |b| band_json(b) },
-      notices: conversion.notices.map { |n| notice_json(n) },
+      notices: presentable_notices(conversion).map { |n| notice_json(n) },
       output: output && { html: output.html, byte_size: output.byte_size, version: output.version },
       source_image: source_image && {
         width: source_image.width,
         height: source_image.height,
-        work_height: (source_image.height * source_image.work_scale).round
+        # src/analysis/app/normalize.py の work_height = max(1, round(height * work_scale)) と
+        # 同じ丸め方（round-half-to-even）に揃える。Rubyの既定（round-half-up）のままだと、
+        # height*work_scaleがちょうど.5になる画像でPythonの実際のwork画像高さと1px食い違い、
+        # フロントの帯オーバーレイがその分ずれる。
+        work_height: [ 1, (source_image.height * source_image.work_scale).round(half: :even) ].max
       }
     }
   end
@@ -40,6 +44,13 @@ module ConversionPresenter
       confidence: band.confidence, runner_up_kind: band.runner_up_kind,
       variant: band.variant, state: band.state
     }
+  end
+
+  # 置換済み(state=replaced)の帯に紐づく注意事項は、結合・分割で既に再判定済みの新しい帯へ
+  # 引き継がれない限り、古い評価として残さない（requirements.md 9章：帯編集のたびに再判定する）。
+  def presentable_notices(conversion)
+    live_band_ids = conversion.bands.listed.pluck(:id)
+    conversion.notices.select { |n| n.band_id.nil? || live_band_ids.include?(n.band_id) }
   end
 
   def notice_json(notice)

@@ -140,7 +140,7 @@ module ComponentCatalog
     p = PREFIXES[SectionKinds::CTA]
 
     <<~HTML.strip
-      <section class="#{p} #{p}--#{params[:variant]}">
+      <section class="#{p} #{p}--#{params[:variant]} #{text_color_class(p, params)}">
         #{heading_tag(params[:heading_tag], "#{p}__title", ParameterExtractor.placeholder(:heading, params[:features], size: :short))}
         <p class="#{p}__body">#{h(ParameterExtractor.placeholder(:body, params[:features], size: :short))}</p>
         <a class="#{p}__button" href="#">#{h(ParameterExtractor.placeholder(:button, params[:features], size: :short))}</a>
@@ -179,10 +179,11 @@ module ComponentCatalog
   def render_testimonials(params)
     p = PREFIXES[SectionKinds::TESTIMONIALS]
     count = params[:variant].split("_").last.to_i
-    items = Array.new(count) do
+    crops = params[:crops] || []
+    items = Array.new(count) do |i|
       <<~ITEM
         <li class="#{p}__item">
-          #{crop_image_tag(nil, css_class: "#{p}__avatar")}
+          #{crop_image_tag(crops[i], css_class: "#{p}__avatar")}
           <blockquote class="#{p}__quote">#{h(ParameterExtractor.placeholder(:body, params[:features]))}</blockquote>
           <p class="#{p}__name">#{h(ParameterExtractor.static(:testimonial_name))}</p>
           <p class="#{p}__role">#{h(ParameterExtractor.static(:testimonial_role))}</p>

@@ -38,6 +38,23 @@ RSpec.describe ComponentCatalog do
     expect(StylesheetBuilder::CSS).to include(".d2h-footer--col_3 .d2h-footer__columns")
   end
 
+  it "keeps the shared wrapper padding/margin for .d2h-footer__columns instead of it being overridden by the list-reset rule" do
+    css = StylesheetBuilder::CSS
+    wrapper_rule = css[/\.d2h-shell__content,\s*\.d2h-header__inner,\s*\.d2h-footer__columns\s*\{[^}]*\}/]
+    expect(wrapper_rule).to include("padding: 1.5rem 1rem")
+
+    list_reset_rule = css[/\.d2h-features__list,[^{]*\{[^}]*\}/]
+    expect(list_reset_rule).not_to include(".d2h-footer__columns")
+  end
+
+  it "renders CTA using the shared text_color_class mechanism, like every other section" do
+    html = described_class.render(SectionKinds::CTA, {
+      variant: "dark", features: base_features, text_color: "light",
+      heading_tag: "h2", repeat_count: nil, crops: [], primary_crop: nil
+    })
+    expect(html).to include("d2h-cta--on-dark")
+  end
+
   it "renders as many gallery items as repeat_count, like the other repeating components" do
     html_with_6 = described_class.render(SectionKinds::GALLERY, {
       variant: "cols_3", features: base_features, text_color: "dark",

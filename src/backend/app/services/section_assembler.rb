@@ -63,8 +63,9 @@ class SectionAssembler
   def crop_param(crop)
     return { placeholder: true } if crop.placeholder? || crop.body.blank?
 
-    mime = crop.shape == "circle" ? "image/png" : "image/jpeg"
-    { placeholder: false, data_uri: "data:#{mime};base64,#{Base64.strict_encode64(crop.body)}" }
+    # 解析層(src/analysis/app/crop.py)は形状に関わらず常にJPEGでエンコードするため、
+    # data URIのMIMEも常にimage/jpegとする（shapeによる出し分けは行わない）。
+    { placeholder: false, data_uri: "data:image/jpeg;base64,#{Base64.strict_encode64(crop.body)}" }
   end
 
   def build_body(sections, need_fallback_h1)

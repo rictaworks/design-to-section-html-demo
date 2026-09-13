@@ -40,6 +40,10 @@ class ConversionPipeline
   # 帯編集後：版を1つ進めて再組み立て・再検証する（requirements.md 9章）
   def self.reassemble!(conversion)
     result = SectionAssembler.assemble(conversion)
+    # SectionAssemblerは呼び出しのたびに現在の全帯を見てvariant_mismatch_fallbackを再計算するため、
+    # 過去の呼び出しで作られた分をここで一旦消してから最新分を保存する。消さないと帯編集のたびに
+    # 同一の注意事項が重複して積み上がり、結合・分割で置き換えられた帯の注意事項も孤立して残り続ける。
+    conversion.notices.where(notice_type: NoticeTypes::VARIANT_MISMATCH_FALLBACK).destroy_all
     persist_notices(conversion, result.notices)
 
     validation = OutputValidator.validate(result.html)
