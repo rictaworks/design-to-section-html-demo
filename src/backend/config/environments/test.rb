@@ -19,6 +19,7 @@ Rails.application.configure do
   config.public_file_server.headers = { "cache-control" => "public, max-age=3600" }
 
   # Show full error reports.
+  # nosemgrep: ruby.rails.security.audit.detailed-exceptions.detailed-exceptions -- テスト環境のみ有効。production.rbはfalse（config/environments/production.rb参照）
   config.consider_all_requests_local = true
   config.cache_store = :null_store
 

@@ -1,5 +1,5 @@
 """解析層（FastAPI）。画像と指示を受け取り結果を返すのみで、状態を持たない。"""
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
@@ -7,6 +7,19 @@ from app import config
 from app.pipeline import analyze, refeature, DecodeError, InvalidRangeError
 
 app = FastAPI(title="design-to-section-html-demo analysis service")
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    # アプリケーション層(Rails)からのみ呼ばれる内部サービスだが、ブラウザから
+    # 直接到達した場合の多層防御として最低限のセキュリティヘッダを付与する
+    # （release-security-gate 工程E対応）。
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    return response
 
 
 class RefeatureRange(BaseModel):
