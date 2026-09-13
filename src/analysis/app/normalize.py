@@ -16,7 +16,9 @@ class NormalizeResult:
     notices: list = field(default_factory=list)
 
 
-def _composite_alpha_on_white(image: np.ndarray) -> np.ndarray:
+def composite_alpha_on_white(image: np.ndarray) -> np.ndarray:
+    """透過(RGBA)を白背景へ合成する（6.2・6.3）。normalize_imageと解析パイプライン
+    （pipeline.pyのanalyze/refeature）の双方から共有される。"""
     if image.ndim == 3 and image.shape[2] == 4:
         bgr = image[:, :, :3].astype(np.float32)
         alpha = (image[:, :, 3:4].astype(np.float32)) / 255.0
@@ -45,7 +47,7 @@ def _detect_theme(image: np.ndarray) -> str:
 def normalize_image(image: np.ndarray) -> NormalizeResult:
     notices = []
 
-    image = _composite_alpha_on_white(image)
+    image = composite_alpha_on_white(image)
     if image.ndim == 2:
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
 

@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image, ImageOps
 
 from app import config
-from app.normalize import normalize_image
+from app.normalize import normalize_image, composite_alpha_on_white
 from app.segment import segment_bands
 from app.features import extract_band_features
 from app.classify import classify_band
@@ -117,8 +117,8 @@ def analyze(image_bytes: bytes) -> dict:
     # 透過は白へ合成する（6.2・6.3）。normalize_imageは作業画像(work_image)側では内部で合成
     # 済みだが、切り出し(_attach_crops)は original_image をそのまま参照するため、ここで一度だけ
     # 合成しておき、以降の処理全体（正規化・帯分割・特徴抽出・切り出し）で一貫させる。
-    # refeature()も同じ理由で_composite_if_needed()を呼んでおり、両エンドポイントで対称にする。
-    original_image = _composite_if_needed(original_image)
+    # refeature()も同じ理由でcomposite_alpha_on_white()を呼んでおり、両エンドポイントで対称にする。
+    original_image = composite_alpha_on_white(original_image)
     norm = normalize_image(original_image)
     work_image = norm.work_image
     work_height, work_width = work_image.shape[:2]
@@ -151,7 +151,7 @@ def refeature(image_base64: str, work_scale: float, ranges: list) -> dict:
 
     original_bytes = base64.b64decode(image_base64)
     original_image = decode_image_bytes(original_bytes)
-    original_image = _composite_if_needed(original_image)
+    original_image = composite_alpha_on_white(original_image)
 
     oh, ow = original_image.shape[:2]
     work_width = max(1, round(ow * work_scale))
@@ -163,13 +163,3 @@ def refeature(image_base64: str, work_scale: float, ranges: list) -> dict:
     _attach_crops(original_image[:, :, :3], work_scale, bands_out, notices)
 
     return {"bands": bands_out, "notices": notices}
-
-
-def _composite_if_needed(image: np.ndarray) -> np.ndarray:
-    if image.ndim == 3 and image.shape[2] == 4:
-        bgr = image[:, :, :3].astype(np.float32)
-        alpha = image[:, :, 3:4].astype(np.float32) / 255.0
-        white = np.full_like(bgr, 255.0)
-        composited = (bgr * alpha + white * (1.0 - alpha)).astype(np.uint8)
-        return composited
-    return image
