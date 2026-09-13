@@ -29,14 +29,16 @@ class AnalysisClient
     perform(uri, request)
   end
 
-  def refeature(image_bytes:, work_scale:, ranges:)
+  def refeature(image_bytes:, work_scale:, ranges:, is_first_band: true, is_last_band: true)
     uri = URI.join(@base_url, "/v1/refeature")
     request = Net::HTTP::Post.new(uri)
     request["Content-Type"] = "application/json"
     request.body = {
       image_base64: Base64.strict_encode64(image_bytes),
       work_scale: work_scale,
-      ranges: ranges
+      ranges: ranges,
+      is_first_band: is_first_band,
+      is_last_band: is_last_band
     }.to_json
     perform(uri, request)
   end

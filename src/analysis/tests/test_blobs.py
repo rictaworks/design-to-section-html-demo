@@ -38,6 +38,17 @@ def test_classifies_solid_contrasting_midsize_rect_as_button():
     assert any(b.kind == "button" for b in blobs)
 
 
+def test_classifies_a_button_sized_blob_as_button_even_when_it_also_fits_the_text_height_threshold():
+    # 帯が大きい（例：ヒーロー帯・CTA帯）と text_max_height が上限40pxまで緩むため、
+    # 典型的なボタン（高さ30px程度）が文字状として誤判定されないことを確認する。
+    img = blank_canvas(600, 400, bg=(255, 255, 255))
+    draw_button_blob(img, x=250, y=180, w=120, h=30, fill=(220, 100, 30), text_color=(255, 255, 255))
+    blobs = extract_and_classify(img)
+    kinds = [b.kind for b in blobs]
+    assert "button" in kinds
+    assert "text" not in kinds
+
+
 def test_classifies_small_low_variance_square_as_icon():
     img = blank_canvas(400, 200, bg=(255, 255, 255))
     draw_icon_blob(img, x=180, y=80, size=24, color=(90, 90, 90))

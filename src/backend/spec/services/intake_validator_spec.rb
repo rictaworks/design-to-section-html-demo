@@ -39,6 +39,12 @@ RSpec.describe IntakeValidator do
     expect(result.error_code).to eq(ErrorCodes::ANIMATED_REJECTED)
   end
 
+  it "rejects a WebP whose VP8X animation flag bit is set, even without an ANIM chunk" do
+    result = described_class.validate(vp8x_only_animation_flag_webp_bytes(width: 400, height: 400))
+    expect(result).not_to be_ok
+    expect(result.error_code).to eq(ErrorCodes::ANIMATED_REJECTED)
+  end
+
   it "rejects a file exceeding 10MB" do
     huge = png_bytes(width: 10, height: 10) + ("\x00" * 11.megabytes)
     result = described_class.validate(huge)

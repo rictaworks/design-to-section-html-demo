@@ -29,6 +29,15 @@ RSpec.describe ComponentCatalog do
     expect(prefixes.uniq.size).to eq(prefixes.size)
   end
 
+  it "renders the footer with its column-count variant class, and the stylesheet defines a matching responsive rule" do
+    html = described_class.render(SectionKinds::FOOTER, {
+      variant: "col_3", features: base_features, text_color: "dark",
+      heading_tag: "h2", repeat_count: 3, crops: [], primary_crop: nil
+    })
+    expect(html).to include("d2h-footer--col_3")
+    expect(StylesheetBuilder::CSS).to include(".d2h-footer--col_3 .d2h-footer__columns")
+  end
+
   it "renders as many gallery items as repeat_count, like the other repeating components" do
     html_with_6 = described_class.render(SectionKinds::GALLERY, {
       variant: "cols_3", features: base_features, text_color: "dark",

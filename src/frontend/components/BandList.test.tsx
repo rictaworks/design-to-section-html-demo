@@ -68,6 +68,21 @@ describe("BandList", () => {
     expect(onMerge).toHaveBeenCalledWith("b1", "b2");
   });
 
+  it("does not offer merging into a next band that has been removed", () => {
+    const onMerge = vi.fn();
+    render(
+      <BandList
+        bands={[band({ id: "b1", position: 0 }), band({ id: "b2", position: 1, state: "removed" })]}
+        onChangeKind={vi.fn()}
+        onMerge={onMerge}
+        onSplit={vi.fn()}
+        onRemove={vi.fn()}
+        onRestore={vi.fn()}
+      />
+    );
+    expect(screen.queryByRole("button", { name: "次の帯と結合" })).not.toBeInTheDocument();
+  });
+
   it("calls onSplit with the entered y position", () => {
     const onSplit = vi.fn();
     render(

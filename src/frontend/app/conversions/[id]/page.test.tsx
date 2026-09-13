@@ -59,6 +59,10 @@ beforeEach(() => {
     // @ts-expect-error jsdom does not implement this
     URL.createObjectURL = () => "blob:mock";
   }
+  if (!("revokeObjectURL" in URL)) {
+    // @ts-expect-error jsdom does not implement this
+    URL.revokeObjectURL = () => {};
+  }
   vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:mock");
 });
 
@@ -89,6 +93,17 @@ describe("ConversionPage", () => {
     await waitFor(() =>
       expect(screen.getByText("デザイン画像の取得に失敗しました。")).toBeInTheDocument()
     );
+  });
+
+  it("revokes the design image's object URL on unmount to avoid leaking memory", async () => {
+    (api.getConversion as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(baseConversion);
+    const revokeSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    const { unmount } = render(<ConversionPage />);
+    await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalled());
+
+    unmount();
+
+    expect(revokeSpy).toHaveBeenCalledWith("blob:mock");
   });
 
   it("calls updateBandKind when the band list's kind select changes", async () => {

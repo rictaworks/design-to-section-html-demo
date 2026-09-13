@@ -29,6 +29,23 @@ describe("UploadForm", () => {
     expect(honeypot).toHaveAttribute("autocomplete", "off");
   });
 
+  it("submits whatever value was actually entered in the honeypot field, not a hardcoded empty string", async () => {
+    (api.createConversion as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "1",
+      state: "uploaded",
+    } as unknown as Awaited<ReturnType<typeof api.createConversion>>);
+    render(<UploadForm onUploaded={vi.fn()} />);
+
+    selectFile();
+    const honeypot = document.querySelector('input[name="website"]') as HTMLInputElement;
+    fireEvent.change(honeypot, { target: { value: "http://spam.example" } });
+    fireEvent.click(screen.getByRole("button", { name: /変換する/ }));
+
+    await waitFor(() =>
+      expect(api.createConversion).toHaveBeenCalledWith(expect.anything(), "http://spam.example")
+    );
+  });
+
   it("calls createConversion and onUploaded on successful submit", async () => {
     const conversion = { id: "1", state: "uploaded" } as unknown as Awaited<
       ReturnType<typeof api.createConversion>

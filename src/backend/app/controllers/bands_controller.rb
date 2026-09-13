@@ -22,14 +22,19 @@ class BandsController < ApplicationController
     first, second = [ @band, other ].sort_by(&:position)
     range = { top_y: first.top_y, bottom_y: second.bottom_y }
 
-    refeatured = call_refeature([ range ])
+    refeatured = call_refeature(
+      [ range ],
+      is_first_band: first.position.zero?,
+      is_last_band: second.position == max_band_position
+    )
     return if performed?
 
     ActiveRecord::Base.transaction do
       first.update!(state: "replaced")
       second.update!(state: "replaced")
       shift_positions_after(second.position, by: -1)
-      ConversionPipeline.persist_bands(@conversion, refeatured, position_offset: first.position)
+      ConversionPipeline.persist_bands(@conversion, refeatured[:bands], position_offset: first.position)
+      ConversionPipeline.persist_notices_with_offset(@conversion, refeatured[:notices], first.position)
     end
 
     ConversionPipeline.reassemble!(@conversion.reload)
@@ -44,13 +49,18 @@ class BandsController < ApplicationController
     end
 
     ranges = [ { top_y: @band.top_y, bottom_y: y }, { top_y: y, bottom_y: @band.bottom_y } ]
-    refeatured = call_refeature(ranges)
+    refeatured = call_refeature(
+      ranges,
+      is_first_band: @band.position.zero?,
+      is_last_band: @band.position == max_band_position
+    )
     return if performed?
 
     ActiveRecord::Base.transaction do
       @band.update!(state: "replaced")
       shift_positions_after(@band.position, by: 1)
-      ConversionPipeline.persist_bands(@conversion, refeatured, position_offset: @band.position)
+      ConversionPipeline.persist_bands(@conversion, refeatured[:bands], position_offset: @band.position)
+      ConversionPipeline.persist_notices_with_offset(@conversion, refeatured[:notices], @band.position)
     end
 
     ConversionPipeline.reassemble!(@conversion.reload)
@@ -90,13 +100,23 @@ class BandsController < ApplicationController
     end
   end
 
-  def call_refeature(ranges)
+  # 結合・分割で対象になる帯（複数の場合はすべて）が、conversion全体の先頭／末尾の帯
+  # でもあるかどうか。positionは削除・置換済みの帯も含めて連番で維持されている
+  # （shift_positions_after参照）ため、常に信頼できる。
+  def max_band_position
+    @conversion.bands.maximum(:position)
+  end
+
+  def call_refeature(ranges, is_first_band:, is_last_band:)
     source_image = @conversion.source_image
     response = AnalysisClient.new.refeature(
-      image_bytes: source_image.body, work_scale: source_image.work_scale, ranges: ranges
+      image_bytes: source_image.body, work_scale: source_image.work_scale, ranges: ranges,
+      is_first_band: is_first_band, is_last_band: is_last_band
     )
-    ConversionPipeline.persist_notices(@conversion, response[:notices] || [])
-    response[:bands] || []
+    # response[:notices]のband_positionは「このrangesの中でのindex」であり、conversion全体
+    # での帯位置ではない。persist_bandsで新しい帯を作りposition_offsetが確定してから、
+    # persist_notices_with_offsetで同じoffsetを使って解決する（呼び出し元で行う）。
+    { bands: response[:bands] || [], notices: response[:notices] || [] }
   rescue AnalysisClient::TimeoutError
     render json: { error: ErrorCodes::ANALYSIS_TIMEOUT }, status: :unprocessable_content
   rescue AnalysisClient::UnreachableError
