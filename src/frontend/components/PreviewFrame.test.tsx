@@ -13,6 +13,14 @@ describe("PreviewFrame", () => {
     }
   });
 
+  it("wraps the simultaneous 3-width view in its own horizontally scrollable container so the page itself does not scroll", () => {
+    render(<PreviewFrame html="<p>hi</p>" />);
+    const frame = screen.getAllByTitle(/プレビュー/)[0];
+    const scrollContainer = frame.closest('[style*="overflow"]');
+    expect(scrollContainer).not.toBeNull();
+    expect(scrollContainer).toHaveStyle({ overflowX: "auto" });
+  });
+
   it("switches to a single width when a width tab is clicked", () => {
     render(<PreviewFrame html="<p>hi</p>" />);
     fireEvent.click(screen.getByRole("button", { name: "モバイル" }));

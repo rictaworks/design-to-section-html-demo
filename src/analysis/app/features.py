@@ -1,6 +1,7 @@
 """6.5 帯特徴の集計（列数・反復項目数・画像位置・整列・見出し規模・背景色・アクセント色等）。"""
 import statistics
 
+from app import config
 from app.blobs import extract_and_classify, band_background_color
 
 
@@ -17,7 +18,7 @@ def _luminance(bgr: tuple) -> float:
 def _cluster_columns(blobs: list, band_width: int) -> int:
     if not blobs:
         return 1
-    gap_threshold = max(40, band_width * 0.05)
+    gap_threshold = max(config.COLUMN_GAP_MIN_PX, band_width * config.COLUMN_GAP_RATIO_OF_WIDTH)
     spans = sorted((b.x, b.x + b.w) for b in blobs)
     clusters = 1
     current_max = spans[0][1]
@@ -41,14 +42,17 @@ def _image_position(image_blobs: list, band_width: int, band_height: int) -> str
     union_h = bottom - top
     center_x = (left + right) / 2
 
-    covers_most = union_w >= band_width * 0.8 and union_h >= band_height * 0.8
+    covers_most = (
+        union_w >= band_width * config.IMAGE_COVERAGE_RATIO
+        and union_h >= band_height * config.IMAGE_COVERAGE_RATIO
+    )
     if covers_most:
         return "full"
-    if union_w >= band_width * 0.8:
+    if union_w >= band_width * config.IMAGE_COVERAGE_RATIO:
         return "top"
-    if center_x < band_width * 0.35:
+    if center_x < band_width * config.IMAGE_POSITION_LEFT_MAX_RATIO:
         return "left"
-    if center_x > band_width * 0.65:
+    if center_x > band_width * config.IMAGE_POSITION_RIGHT_MIN_RATIO:
         return "right"
     return "top"
 
@@ -83,7 +87,13 @@ def extract_band_features(
 
     if text_blobs:
         mean_x = sum(b.x + b.w / 2 for b in text_blobs) / len(text_blobs)
-        alignment = "center" if band_width * 0.4 <= mean_x <= band_width * 0.6 else "left"
+        alignment = (
+            "center"
+            if band_width * config.ALIGNMENT_CENTER_MIN_RATIO
+            <= mean_x
+            <= band_width * config.ALIGNMENT_CENTER_MAX_RATIO
+            else "left"
+        )
     else:
         alignment = "left"
 

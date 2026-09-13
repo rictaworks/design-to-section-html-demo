@@ -11,12 +11,14 @@ default: &default
   analysis_timeout_seconds: 30
   output_max_bytes: 6291456 # 6 MB
   embedding_budget_bytes: 4194304 # 4 MB
+  daily_reset_grace_period_seconds: 30
 
 development:
   <<: *default
 
 test:
   <<: *default
+  daily_reset_grace_period_seconds: 0
 
 production:
   <<: *default

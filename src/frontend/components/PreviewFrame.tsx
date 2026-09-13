@@ -51,18 +51,22 @@ export function PreviewFrame({ html, onDownload }: PreviewFrameProps) {
         )}
       </div>
 
-      <div className="flex flex-wrap gap-4">
-        {visible.map((key) => (
-          <div key={key} className="flex flex-col gap-1">
-            <span className="text-xs text-zinc-500">{WIDTH_LABELS[key]}</span>
-            <iframe
-              title={`${WIDTH_LABELS[key]}${messages.result.previewTitle}`}
-              srcDoc={html}
-              sandbox=""
-              style={{ width: PREVIEW_WIDTHS[key], height: 600, border: "1px solid #e4e4e7" }}
-            />
-          </div>
-        ))}
+      {/* 3幅同時表示は幅の合計が画面より広くなりうるため、このコンテナだけを横スクロール
+          させ、ページ本体（親要素）が横スクロールしないようにする */}
+      <div style={{ overflowX: "auto" }}>
+        <div className="flex flex-nowrap gap-4">
+          {visible.map((key) => (
+            <div key={key} className="flex flex-col gap-1" style={{ flex: "0 0 auto" }}>
+              <span className="text-xs text-zinc-500">{WIDTH_LABELS[key]}</span>
+              <iframe
+                title={`${WIDTH_LABELS[key]}${messages.result.previewTitle}`}
+                srcDoc={html}
+                sandbox=""
+                style={{ width: PREVIEW_WIDTHS[key], height: 600, border: "1px solid #e4e4e7" }}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

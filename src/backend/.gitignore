@@ -13,3 +13,6 @@
 /db/*.sqlite3-*
 
 /public/assets
+
+# 秘密情報（ルートの.gitignoreでも保護されるが、src/backend単体運用時のための多層防御）
+/config/master.key

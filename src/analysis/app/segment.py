@@ -150,7 +150,7 @@ def _enforce_max_bands(ranges: list) -> tuple:
 def _detect_header_boundary(image: np.ndarray, bg_color: tuple) -> int:
     height, width = image.shape[:2]
     limit = int(height * config.HEADER_MAX_HEIGHT_RATIO)
-    if limit < 4:
+    if limit < config.HEADER_BOUNDARY_MIN_LIMIT_PX:
         return None
     top_region = image[0:limit, :]
     blobs = extract_and_classify(top_region, bg_color)
@@ -159,9 +159,9 @@ def _detect_header_boundary(image: np.ndarray, bg_color: tuple) -> int:
         return None
     centers = [b.y + b.h / 2 for b in text_blobs]
     centers.sort()
-    if centers[-1] - centers[0] > limit * 0.6:
+    if centers[-1] - centers[0] > limit * config.HEADER_BASELINE_TOLERANCE_RATIO:
         return None
-    bottom = max(b.y + b.h for b in text_blobs) + 4
+    bottom = max(b.y + b.h for b in text_blobs) + config.HEADER_BOTTOM_PADDING_PX
     return min(bottom, limit)
 
 

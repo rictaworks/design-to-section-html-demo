@@ -111,4 +111,25 @@ RSpec.describe "Bands API", type: :request do
       expect(after_restore["output"]["html"]).to include("<footer")
     end
   end
+
+  describe "operating on a replaced band" do
+    it "rejects further edits on a band that was replaced by a merge, instead of silently no-op'ing" do
+      body = create_ready_conversion
+      a_id = body["bands"][0]["id"]
+      b_id = body["bands"][1]["id"]
+
+      stub_refeature_success(bands: [
+        { top_y: 0, bottom_y: 800, detected_kind: SectionKinds::HERO, confidence: 0.8,
+          runner_up_kind: nil, features: { image_position: "none" }, crops: [] }
+      ])
+      post "/conversions/#{body['id']}/bands/#{a_id}/merge", params: { with: b_id }
+      expect(response).to have_http_status(:ok)
+      expect(Band.find(a_id).state).to eq("replaced")
+
+      patch "/conversions/#{body['id']}/bands/#{a_id}", params: { kind: SectionKinds::FAQ }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["error"]).to eq("band_replaced")
+    end
+  end
 end

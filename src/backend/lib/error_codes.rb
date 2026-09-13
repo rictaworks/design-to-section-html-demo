@@ -13,5 +13,8 @@ module ErrorCodes
   INVALID_KIND = "invalid_kind"
   ANALYSIS_TIMEOUT = "analysis_timeout"
   ANALYSIS_UNREACHABLE = "analysis_unreachable"
+  ANALYSIS_DECODE_FAILED = "analysis_decode_failed"
   OUTPUT_VALIDATION_FAILED = "output_validation_failed"
+  RESET_IN_PROGRESS = "reset_in_progress"
+  BAND_REPLACED = "band_replaced"
 end

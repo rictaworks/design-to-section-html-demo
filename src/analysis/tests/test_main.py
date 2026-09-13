@@ -2,6 +2,7 @@ import base64
 
 from fastapi.testclient import TestClient
 
+from app import config
 from app.main import app
 from tests.fixtures.synth import blank_canvas, draw_text_line, encode_png
 
@@ -27,6 +28,14 @@ def test_analyze_endpoint_returns_422_for_invalid_image():
     res = client.post("/v1/analyze", files=files)
     assert res.status_code == 422
     assert res.json()["detail"]["error"] == "decode_failed"
+
+
+def test_analyze_endpoint_rejects_uploads_over_the_size_limit_without_buffering_unbounded_data():
+    oversized = b"x" * (config.MAX_UPLOAD_BYTES + 1)
+    files = {"file": ("big.png", oversized, "image/png")}
+    res = client.post("/v1/analyze", files=files)
+    assert res.status_code == 422
+    assert res.json()["detail"]["error"] == "size_exceeded"
 
 
 def test_refeature_endpoint_returns_200_with_bands():

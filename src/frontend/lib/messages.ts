@@ -16,6 +16,10 @@ export const messages = {
     listEmpty: "まだ変換がありません。",
     open: "結果を見る",
     honeypotLabel: "この項目は入力しないでください",
+    delete: "削除",
+    deleteConfirm: "この変換を削除しますか？",
+    deleteConfirmYes: "削除する",
+    deleteConfirmCancel: "キャンセル",
   },
   errors: {
     invalid_format: "対応していないファイル形式です。",
@@ -79,6 +83,8 @@ export const messages = {
     previewDesktop: "デスクトップ",
     download: "HTMLファイルをダウンロード",
     versionLabel: "版",
+    removedBadge: "削除対象",
+    sourceImageFetchFailed: "デザイン画像の取得に失敗しました。",
   },
   common: {
     close: "閉じる",

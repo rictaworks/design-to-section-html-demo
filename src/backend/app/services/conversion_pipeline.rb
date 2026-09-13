@@ -28,9 +28,13 @@ class ConversionPipeline
 
     reassemble!(conversion)
   rescue AnalysisClient::TimeoutError
-    fail_conversion!(conversion, NoticeTypes::ANALYSIS_TIMEOUT, "analysis_timeout")
-  rescue AnalysisClient::UnreachableError, AnalysisClient::DecodeFailedError
-    fail_conversion!(conversion, NoticeTypes::ANALYSIS_UNREACHABLE, "analysis_unreachable")
+    fail_conversion!(conversion, NoticeTypes::ANALYSIS_TIMEOUT, ErrorCodes::ANALYSIS_TIMEOUT)
+  rescue AnalysisClient::UnreachableError
+    fail_conversion!(conversion, NoticeTypes::ANALYSIS_UNREACHABLE, ErrorCodes::ANALYSIS_UNREACHABLE)
+  rescue AnalysisClient::DecodeFailedError
+    # 解析層の画像デコード失敗(422)は接続不能とは別事象。利用者へ表示するfailed_reasonを区別する
+    # （notice_typeは10章の異常検知表に明示のカテゴリが無いためANALYSIS_UNREACHABLEを流用する）。
+    fail_conversion!(conversion, NoticeTypes::ANALYSIS_UNREACHABLE, ErrorCodes::ANALYSIS_DECODE_FAILED)
   end
 
   # 帯編集後：版を1つ進めて再組み立て・再検証する（requirements.md 9章）

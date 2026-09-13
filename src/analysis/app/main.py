@@ -2,6 +2,7 @@
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
+from app import config
 from app.pipeline import analyze, refeature, DecodeError
 
 app = FastAPI(title="design-to-section-html-demo analysis service")
@@ -20,7 +21,11 @@ class RefeatureRequest(BaseModel):
 
 @app.post("/v1/analyze")
 async def analyze_endpoint(file: UploadFile = File(...)):
-    data = await file.read()
+    # 解析層自体の多層防御（受入検証6.2の主たる実施はRails側）。上限+1byteだけ読み、
+    # 超過していれば無制限に読み込む前に打ち切る。
+    data = await file.read(config.MAX_UPLOAD_BYTES + 1)
+    if len(data) > config.MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=422, detail={"error": "size_exceeded"})
     try:
         result = analyze(data)
     except DecodeError:

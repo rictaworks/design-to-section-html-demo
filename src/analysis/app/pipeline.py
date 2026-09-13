@@ -35,13 +35,16 @@ def decode_image_bytes(data: bytes) -> np.ndarray:
     return cv2.cvtColor(array, cv2.COLOR_RGB2BGR)
 
 
-def _allowed_kinds(position: str, index: int) -> list:
+def _allowed_kinds(position: str, index: int, header_offset: int) -> list:
+    # 6.6「ヒーロー：ヘッダーを除く先頭から2帯以内」。ヘッダーが帯0として分離済みの場合は
+    # header_offset=1となり、hero対象はindex 1,2。分離されていない場合はheader_offset=0で
+    # index 0,1が対象になる（headerとheroは同じ帯を取り合う候補になりうるが、それは採点で決める）。
     allowed = list(config.SECTION_KINDS)
     if position != "first" and "header" in allowed:
         allowed.remove("header")
     if position != "last" and "footer" in allowed:
         allowed.remove("footer")
-    if index > 2 and "hero" in allowed:
+    if index >= header_offset + config.HERO_MAX_BANDS_FROM_TOP and "hero" in allowed:
         allowed.remove("hero")
     return allowed
 
@@ -62,7 +65,10 @@ def _classify_bands(work_image: np.ndarray, band_ranges: list, work_width: int, 
         if accent_fallback is None and features["accent_color_hex"]:
             accent_fallback = features["accent_color_hex"]
 
-        allowed = _allowed_kinds(position, index)
+        # bands_out[0]は既に分類済み（このループがindex 0から順に処理するため）なので、
+        # ヘッダーが帯0として分離済みかどうかをここで安全に参照できる。
+        header_offset = 1 if bands_out and bands_out[0]["detected_kind"] == "header" else 0
+        allowed = _allowed_kinds(position, index, header_offset)
         kind, confidence, runner_up_kind, band_notices = classify_band(features, allowed)
 
         for notice in band_notices:
@@ -108,6 +114,11 @@ def _attach_crops(original_image: np.ndarray, work_scale: float, bands_out: list
 
 def analyze(image_bytes: bytes) -> dict:
     original_image = decode_image_bytes(image_bytes)
+    # 透過は白へ合成する（6.2・6.3）。normalize_imageは作業画像(work_image)側では内部で合成
+    # 済みだが、切り出し(_attach_crops)は original_image をそのまま参照するため、ここで一度だけ
+    # 合成しておき、以降の処理全体（正規化・帯分割・特徴抽出・切り出し）で一貫させる。
+    # refeature()も同じ理由で_composite_if_needed()を呼んでおり、両エンドポイントで対称にする。
+    original_image = _composite_if_needed(original_image)
     norm = normalize_image(original_image)
     work_image = norm.work_image
     work_height, work_width = work_image.shape[:2]

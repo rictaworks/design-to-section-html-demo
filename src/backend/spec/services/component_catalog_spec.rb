@@ -28,4 +28,19 @@ RSpec.describe ComponentCatalog do
     prefixes = ComponentCatalog::PREFIXES.values
     expect(prefixes.uniq.size).to eq(prefixes.size)
   end
+
+  it "renders as many gallery items as repeat_count, like the other repeating components" do
+    html_with_6 = described_class.render(SectionKinds::GALLERY, {
+      variant: "cols_3", features: base_features, text_color: "dark",
+      heading_tag: "h2", repeat_count: 6, crops: [], primary_crop: nil
+    })
+    html_with_9 = described_class.render(SectionKinds::GALLERY, {
+      variant: "cols_3", features: base_features, text_color: "dark",
+      heading_tag: "h2", repeat_count: 9, crops: [], primary_crop: nil
+    })
+
+    count = ->(html) { Nokogiri::HTML5.fragment(html).css("li").size }
+    expect(count.call(html_with_6)).to eq(6)
+    expect(count.call(html_with_9)).to eq(9)
+  end
 end

@@ -1,6 +1,13 @@
 class ConversionsController < ApplicationController
   CONTENT_TYPES = { "png" => "image/png", "jpeg" => "image/jpeg", "webp" => "image/webp" }.freeze
 
+  # 同時アクティブ件数チェックと作成の間のTOCTOUを防ぐ、セッションごとのプロセス内ロック。
+  # SQLiteはSELECT ... FOR UPDATEを解釈しないため、DBロックではなくプロセス内Mutexで直列化する
+  # （単一プロセスのデモ運用を前提としたKISSな対策。同一セッション内の競合のみが対象）。
+  ACTIVE_COUNT_MUTEXES = Concurrent::Map.new
+
+  class ActiveConversionLimitExceeded < StandardError; end
+
   def index
     conversions = Conversion.for_session(current_session_id).order(created_at: :desc)
     render json: conversions.map { |c| ConversionPresenter.summary(c) }
@@ -9,6 +16,10 @@ class ConversionsController < ApplicationController
   def create
     if HoneypotGuard.triggered?(params)
       return render json: { id: SecureRandom.uuid, state: "uploaded" }, status: :created
+    end
+
+    if SystemState.reset_in_progress?
+      return render json: { error: ErrorCodes::RESET_IN_PROGRESS }, status: :unprocessable_content
     end
 
     upload = params[:file]
@@ -20,13 +31,12 @@ class ConversionsController < ApplicationController
       return render json: { error: validation.error_code }, status: :unprocessable_content
     end
 
-    active_count = Conversion.for_session(current_session_id).active.count
-    max_active = ConversionPipeline.pipeline_config[:max_active_conversions_per_session]
-    if active_count >= max_active
+    conversion = nil
+    begin
+      conversion = create_conversion_with_image_if_under_limit(bytes, validation)
+    rescue ActiveConversionLimitExceeded
       return render json: { error: ErrorCodes::TOO_MANY_ACTIVE }, status: :unprocessable_content
     end
-
-    conversion = create_conversion_with_image(bytes, validation)
     ConversionPipeline.run_initial_analysis(
       conversion, bytes: bytes, filename: upload.original_filename, content_type: upload.content_type
     )
@@ -53,6 +63,17 @@ class ConversionsController < ApplicationController
   end
 
   private
+
+  def create_conversion_with_image_if_under_limit(bytes, validation)
+    mutex = ACTIVE_COUNT_MUTEXES.compute_if_absent(current_session_id) { Mutex.new }
+    mutex.synchronize do
+      active_count = Conversion.for_session(current_session_id).active.count
+      max_active = ConversionPipeline.pipeline_config[:max_active_conversions_per_session]
+      raise ActiveConversionLimitExceeded if active_count >= max_active
+
+      create_conversion_with_image(bytes, validation)
+    end
+  end
 
   def create_conversion_with_image(bytes, validation)
     conversion = nil

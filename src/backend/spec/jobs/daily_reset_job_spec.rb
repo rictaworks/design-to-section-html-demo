@@ -30,5 +30,37 @@ RSpec.describe DailyResetJob do
       expect(Session.count).to eq(0)
       expect(Conversion.count).to eq(0)
     end
+
+    it "stops new intake for the duration of the run and resumes it afterwards" do
+      expect(SystemState.reset_in_progress?).to be(false)
+
+      seen_in_progress = false
+      job = described_class.new
+      allow(job).to receive(:purge_all).and_wrap_original do |original|
+        seen_in_progress = SystemState.reset_in_progress?
+        original.call
+      end
+
+      job.perform
+
+      expect(seen_in_progress).to be(true)
+      expect(SystemState.reset_in_progress?).to be(false)
+    end
+
+    it "waits for the configured grace period between interrupting and purging" do
+      job = described_class.new
+      allow(job).to receive(:grace_period_seconds).and_return(5)
+      expect(job).to receive(:sleep).with(5)
+
+      job.perform
+    end
+
+    it "clears the in-progress flag even if purging raises" do
+      job = described_class.new
+      allow(job).to receive(:purge_all).and_raise("boom")
+
+      expect { job.perform }.to raise_error("boom")
+      expect(SystemState.reset_in_progress?).to be(false)
+    end
   end
 end

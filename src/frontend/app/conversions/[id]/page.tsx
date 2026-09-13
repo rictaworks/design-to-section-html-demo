@@ -29,6 +29,7 @@ export default function ConversionPage() {
 
   const [conversion, setConversion] = useState<Conversion | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [selectedBandId, setSelectedBandId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,10 +86,15 @@ export default function ConversionPage() {
     let cancelled = false;
     getSourceImageBlob(id)
       .then((blob) => {
-        if (!cancelled) setImageUrl(URL.createObjectURL(blob));
+        if (!cancelled) {
+          setImageUrl(URL.createObjectURL(blob));
+          setImageError(null);
+        }
       })
       .catch(() => {
-        // 画像が取得できない場合はオーバーレイ表示を省略する（状態表示は別途行う）
+        // 画像取得に失敗してもオーバーレイ表示を省略するだけで結果画面自体は続行するが、
+        // 理由なく黙って何も表示しないのは避け、利用者にエラーを伝える
+        if (!cancelled) setImageError(messages.result.sourceImageFetchFailed);
       });
     return () => {
       cancelled = true;
@@ -139,6 +145,8 @@ export default function ConversionPage() {
         )}
         {error && <InlineMessage kind="error" message={error} />}
       </section>
+
+      {imageError && <InlineMessage kind="error" message={imageError} />}
 
       {imageUrl && (
         <BandOverlay

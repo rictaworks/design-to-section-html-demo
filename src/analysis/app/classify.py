@@ -134,16 +134,18 @@ def _score_footer(f):
 
 
 _SCORERS = {
+    # キー文字列はrequirements.md 7章の12種別コード。アプリケーション層(Rails)の
+    # SectionKinds（src/backend/lib/section_kinds.rb）と完全に一致させること。
     "header": _score_header,
     "hero": _score_hero,
-    "feature_list": _score_feature_list,
-    "image_and_text": _score_image_and_text,
+    "features": _score_feature_list,
+    "image_with_text": _score_image_and_text,
     "cta": _score_cta,
     "pricing": _score_pricing,
-    "testimonial": _score_testimonial,
+    "testimonials": _score_testimonial,
     "faq": _score_faq,
     "gallery": _score_gallery,
-    "logo_strip": _score_logo_strip,
+    "logos": _score_logo_strip,
     "footer": _score_footer,
 }
 

@@ -23,12 +23,14 @@ export function BandOverlay({ imageUrl, workHeight, bands, selectedBandId, onSel
         if (!band) return null;
         const kind = band.user_kind ?? band.detected_kind;
         const selected = selectedBandId === band.id;
+        const removed = band.state === "removed";
         return (
           <button
             key={band.id}
             type="button"
             data-testid={`band-region-${band.id}`}
             data-selected={selected}
+            data-removed={removed}
             onClick={() => onSelectBand(band.id)}
             style={{
               position: "absolute",
@@ -37,7 +39,8 @@ export function BandOverlay({ imageUrl, workHeight, bands, selectedBandId, onSel
               top: `${rect.topPercent}%`,
               height: `${rect.heightPercent}%`,
               border: selected ? "2px solid #2563eb" : "1px dashed rgba(0,0,0,0.4)",
-              background: selected ? "rgba(37,99,235,0.1)" : "transparent",
+              background: selected ? "rgba(37,99,235,0.1)" : removed ? "repeating-linear-gradient(45deg, rgba(0,0,0,0.35), rgba(0,0,0,0.35) 6px, rgba(0,0,0,0.15) 6px, rgba(0,0,0,0.15) 12px)" : "transparent",
+              opacity: removed ? 0.6 : 1,
               textAlign: "left",
               padding: 0,
               cursor: "pointer",
@@ -53,6 +56,7 @@ export function BandOverlay({ imageUrl, workHeight, bands, selectedBandId, onSel
               }}
             >
               {messages.sectionKindLabels[kind]}
+              {removed ? `（${messages.result.removedBadge}）` : ""}
             </span>
           </button>
         );

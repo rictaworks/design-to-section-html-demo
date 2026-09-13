@@ -48,4 +48,17 @@ describe("BandOverlay", () => {
     expect(onSelectBand).toHaveBeenCalledWith("b1");
     expect(screen.getByTestId("band-region-b1")).toHaveAttribute("data-selected", "true");
   });
+
+  it("visually marks a removed band as distinct from the other bands", () => {
+    render(
+      <BandOverlay
+        imageUrl="data:image/png;base64,AAA"
+        workHeight={1000}
+        bands={[band({ id: "b1", state: "removed" })]}
+        onSelectBand={vi.fn()}
+      />
+    );
+    expect(screen.getByTestId("band-region-b1")).toHaveAttribute("data-removed", "true");
+    expect(screen.getByText(/削除対象/)).toBeInTheDocument();
+  });
 });
