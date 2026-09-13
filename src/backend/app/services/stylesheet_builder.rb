@@ -1,5 +1,9 @@
 # 生成物に埋め込む単一CSS（requirements.md 6.8・8章）。
 # 外部フォント／外部スタイルシートを参照せず、システムフォントを列挙する。
+#
+# .d2h-footer__columns は上部の共通ラッパルール（max-width/margin auto/padding）を維持したまま
+# グリッド表示だけ別ルールで追加している。features/pricing/testimonials/galleryのリストと同じ
+# ルールにまとめるとpadding:0・margin:0で上書きされてしまうため、あえて分けている。
 module StylesheetBuilder
   SYSTEM_FONTS =
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", ' \
@@ -59,11 +63,11 @@ module StylesheetBuilder
       .d2h-hero__inner, .d2h-imgtext { flex-direction: column-reverse; }
     }
 
-    .d2h-features__list, .d2h-pricing__list, .d2h-testimonials__list,
-    .d2h-gallery__list, .d2h-footer__columns {
+    .d2h-features__list, .d2h-pricing__list, .d2h-testimonials__list, .d2h-gallery__list {
       display: grid; gap: 1.5rem; list-style: none; padding: 0; margin: 0;
       grid-template-columns: 1fr;
     }
+    .d2h-footer__columns { display: grid; gap: 1.5rem; grid-template-columns: 1fr; }
     @media (min-width: 600px) {
       .d2h-features--col_2 .d2h-features__list, .d2h-pricing--col_2 .d2h-pricing__list,
       .d2h-testimonials--col_2 .d2h-testimonials__list, .d2h-gallery--col_2 .d2h-gallery__list,
@@ -100,8 +104,6 @@ module StylesheetBuilder
     .d2h-generic, .d2h-cta { padding: 1.5rem 1rem; max-width: 1200px; margin: 0 auto; }
     .d2h-generic--center { text-align: center; }
     .d2h-cta { text-align: center; }
-    .d2h-cta--dark { background: #111827; color: #f9fafb; }
-    .d2h-cta--light { background: #f3f4f6; color: #111827; }
 
     a[class*="__button"] {
       display: inline-block; padding: 0.6rem 1.2rem; border-radius: 0.375rem;

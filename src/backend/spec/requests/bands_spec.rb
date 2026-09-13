@@ -149,6 +149,30 @@ RSpec.describe "Bands API", type: :request do
       expect(notice.band_id).to eq(new_second_band.id)
     end
 
+    it "drops a pre-existing notice that belonged to the now-replaced band instead of leaving it pointing at a hidden band" do
+      stub_analysis_success(
+        bands: default_bands,
+        notices: [ { notice_type: NoticeTypes::LOW_CONFIDENCE_KIND, band_position: 1, detail: {} } ]
+      )
+      file = Rack::Test::UploadedFile.new(StringIO.new(png_bytes(width: 400, height: 1000)), "image/png", original_filename: "d.png")
+      post "/conversions", params: { file: file }
+      body = JSON.parse(response.body)
+      hero_id = body["bands"][1]["id"] # position 1、事前にlow_confidence_kindのnoticeが付いている
+      expect(body["notices"].map { |n| n["band_id"] }).to include(hero_id)
+
+      stub_refeature_success(bands: [
+        { top_y: 80, bottom_y: 400, detected_kind: SectionKinds::HERO, confidence: 0.8,
+          runner_up_kind: nil, features: { image_position: "none" }, crops: [] },
+        { top_y: 400, bottom_y: 800, detected_kind: SectionKinds::GENERIC_TEXT, confidence: 0.5,
+          runner_up_kind: nil, features: { alignment: "left" }, crops: [] }
+      ])
+      post "/conversions/#{body['id']}/bands/#{hero_id}/split", params: { y: 400 }
+      expect(response).to have_http_status(:ok)
+      updated = JSON.parse(response.body)
+
+      expect(updated["notices"].map { |n| n["band_id"] }).not_to include(hero_id)
+    end
+
     it "attaches a refeature notice to the new band even when it lands on the same position the replaced band still occupies" do
       # 分割元の帯（末尾, position 2）はstate="replaced"になるだけでpositionは変わらず維持
       # されるため、position_offset(2)+0=2 の位置には「新しい先頭側の帯」と「置換済みの旧帯」
