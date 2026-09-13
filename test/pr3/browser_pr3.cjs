@@ -175,18 +175,14 @@ async function main() {
     );
 
     await check(
-      "手順6（既知の別事象・回帰マーカー）: 分割前から存在していた注意事項が、置換された旧帯を指したまま一覧に残り続けないこと",
+      "手順6（PR #5の回帰テスト）: 分割前から存在していた注意事項が、置換された旧帯を指したまま一覧に残り続けないこと",
       async () => {
         // test/pr3/test_pr3_api.py の
         // test_step6_split_notices_reference_the_new_child_band_not_the_replaced_original
-        // と同じ観点。上のcheckで確認した「分割操作そのものが発行する注意事項の
-        // band_id解決」はPR #4で修正されているが、分割対象の帯が元々持っていた
-        // 注意事項(その帯の初回作成時にband_idで直接紐付けたもの)は、帯が
-        // state=replacedになった後も再割り当て・削除されずそのまま残ることがあり、
-        // 一覧からは見えなくなった帯を指す注意事項が表示され得る。
-        // これはPR #4が修正した「position重複による誤紐付け」とは別経路の事象であり、
-        // このcheckが失敗する場合はPR #4の対象外の既知事象として報告する
-        // （修正はしない）。
+        // と同じ観点。分割対象の帯が元々持っていた注意事項(その帯の初回作成時に
+        // band_idで直接紐付けたもの)は、帯がstate=replacedになった後も一覧に
+        // 残り続けることがあったが、PR #5（conversion_presenter.rbのpresentable_notices）
+        // で修正済み。このcheckが失敗する場合はPR #5の退行を意味する。
         assert(splitReplacedBandId, "直前のcheckで分割操作が行われている必要がある");
         const after = await fetchConversion(page, conversionUrl.split("/").pop());
         const orphanedNotices = after.notices.filter((n) => n.band_id === splitReplacedBandId);
