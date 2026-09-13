@@ -97,6 +97,29 @@ class ConversionPipeline
     end
   end
 
+  # refeature（帯の結合・分割時の再抽出）のnoticeは、band_positionが「そのとき渡したranges
+  # 配列内でのindex」であり、conversion全体の帯のpositionとは無関係。呼び出し側は必ず
+  # persist_bandsで新しい帯を作った後（position_offsetが確定した後）に、同じoffsetで
+  # このメソッドを呼ぶこと。
+  def self.persist_notices_with_offset(conversion, notices_data, position_offset)
+    notices_data.each do |n|
+      relative_position = n[:band_position]
+      band_id =
+        if relative_position.nil?
+          nil
+        else
+          conversion.bands.find_by(position: position_offset + relative_position)&.id
+        end
+
+      conversion.notices.create!(
+        session_id: conversion.session_id,
+        band_id: band_id,
+        notice_type: n[:notice_type] || n["notice_type"],
+        detail: (n[:detail] || {}).stringify_keys
+      )
+    end
+  end
+
   def self.persist_band_notices(conversion, band, notices_data)
     notices_data.each do |n|
       conversion.notices.create!(
@@ -107,6 +130,10 @@ class ConversionPipeline
   end
 
   def self.resolve_band_id(conversion, notice)
+    # SectionAssemblerのnoticeは対象帯のband_idを直接持つ。解析層のnoticeはband_position
+    # （帯の並び順）しか持たないため、その場合のみ位置からband_idを引く。
+    return notice[:band_id] if notice[:band_id]
+
     position = notice[:band_position]
     return nil if position.nil?
     conversion.bands.find_by(position: position)&.id

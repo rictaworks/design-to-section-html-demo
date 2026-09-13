@@ -55,10 +55,10 @@ export function listConversions(): Promise<ConversionListItem[]> {
   return request<ConversionListItem[]>("/conversions");
 }
 
-export function createConversion(file: File): Promise<Conversion> {
+export function createConversion(file: File, honeypot: string = ""): Promise<Conversion> {
   const form = new FormData();
   form.append("file", file);
-  form.append("website", "");
+  form.append("website", honeypot);
   return request<Conversion>("/conversions", { method: "POST", body: form });
 }
 

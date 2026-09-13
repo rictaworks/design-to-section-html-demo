@@ -67,20 +67,23 @@ module StylesheetBuilder
     @media (min-width: 600px) {
       .d2h-features--col_2 .d2h-features__list, .d2h-pricing--col_2 .d2h-pricing__list,
       .d2h-testimonials--col_2 .d2h-testimonials__list, .d2h-gallery--col_2 .d2h-gallery__list,
+      .d2h-footer--col_2 .d2h-footer__columns,
       .d2h-features--col_3 .d2h-features__list, .d2h-pricing--col_3 .d2h-pricing__list,
       .d2h-testimonials--col_3 .d2h-testimonials__list, .d2h-gallery--col_3 .d2h-gallery__list,
+      .d2h-footer--col_3 .d2h-footer__columns,
       .d2h-features--col_4 .d2h-features__list, .d2h-pricing--col_4 .d2h-pricing__list,
-      .d2h-gallery--col_4 .d2h-gallery__list {
+      .d2h-gallery--col_4 .d2h-gallery__list, .d2h-footer--col_4 .d2h-footer__columns {
         grid-template-columns: repeat(2, 1fr);
       }
     }
     @media (min-width: 1024px) {
       .d2h-features--col_3 .d2h-features__list, .d2h-pricing--col_3 .d2h-pricing__list,
-      .d2h-testimonials--col_3 .d2h-testimonials__list, .d2h-gallery--col_3 .d2h-gallery__list {
+      .d2h-testimonials--col_3 .d2h-testimonials__list, .d2h-gallery--col_3 .d2h-gallery__list,
+      .d2h-footer--col_3 .d2h-footer__columns {
         grid-template-columns: repeat(3, 1fr);
       }
       .d2h-features--col_4 .d2h-features__list, .d2h-pricing--col_4 .d2h-pricing__list,
-      .d2h-gallery--col_4 .d2h-gallery__list {
+      .d2h-gallery--col_4 .d2h-gallery__list, .d2h-footer--col_4 .d2h-footer__columns {
         grid-template-columns: repeat(4, 1fr);
       }
     }

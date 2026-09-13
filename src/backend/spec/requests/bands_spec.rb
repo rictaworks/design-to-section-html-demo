@@ -89,6 +89,73 @@ RSpec.describe "Bands API", type: :request do
       updated = JSON.parse(response.body)
       expect(updated["bands"].size).to eq(4)
     end
+
+    it "attaches a refeature notice to the correct newly-created band, not an unrelated band that happens to share the raw range index" do
+      body = create_ready_conversion
+      footer_id = body["bands"][2]["id"] # position 2 (last band, top_y 800, bottom_y 1000)
+
+      stub_refeature_success(
+        bands: [
+          { top_y: 800, bottom_y: 900, detected_kind: SectionKinds::GENERIC_TEXT, confidence: 0.5,
+            runner_up_kind: nil, features: { alignment: "left" }, crops: [] },
+          { top_y: 900, bottom_y: 1000, detected_kind: SectionKinds::FOOTER, confidence: 0.6,
+            runner_up_kind: nil, features: { column_count: 1 }, crops: [] }
+        ],
+        # band_position: 1 は「このsplitで渡した2レンジのうち2番目」であり、conversion全体の
+        # 帯position 1（＝ヒーロー帯）とは無関係。全体でのposition 3（split後2番目の新しい帯）に
+        # 正しく紐付くべき
+        notices: [ { notice_type: NoticeTypes::LOW_CONFIDENCE_KIND, band_position: 1, detail: {} } ]
+      )
+
+      post "/conversions/#{body['id']}/bands/#{footer_id}/split", params: { y: 900 }
+      expect(response).to have_http_status(:ok)
+
+      new_second_band = Band.find_by(conversion_id: body["id"], position: 3)
+      notice = Notice.find_by(conversion_id: body["id"], notice_type: NoticeTypes::LOW_CONFIDENCE_KIND)
+      expect(notice.band_id).to eq(new_second_band.id)
+    end
+
+    it "tells the analysis layer whether the split band is the page's true first/last band, not just first/last within the request" do
+      body = create_ready_conversion
+      hero_id = body["bands"][1]["id"] # position 1: page中間の帯（先頭でも末尾でもない）
+
+      stub_refeature_success(bands: [
+        { top_y: 80, bottom_y: 400, detected_kind: SectionKinds::HERO, confidence: 0.8,
+          runner_up_kind: nil, features: { image_position: "none" }, crops: [] },
+        { top_y: 400, bottom_y: 800, detected_kind: SectionKinds::GENERIC_TEXT, confidence: 0.5,
+          runner_up_kind: nil, features: { alignment: "left" }, crops: [] }
+      ])
+
+      post "/conversions/#{body['id']}/bands/#{hero_id}/split", params: { y: 400 }
+      expect(response).to have_http_status(:ok)
+
+      expect(
+        a_request(:post, %r{/v1/refeature}).with(
+          body: hash_including("is_first_band" => false, "is_last_band" => false)
+        )
+      ).to have_been_made
+    end
+
+    it "marks is_last_band true when splitting the page's actual last band" do
+      body = create_ready_conversion
+      footer_id = body["bands"][2]["id"] # position 2: page末尾の帯
+
+      stub_refeature_success(bands: [
+        { top_y: 800, bottom_y: 900, detected_kind: SectionKinds::GENERIC_TEXT, confidence: 0.5,
+          runner_up_kind: nil, features: { alignment: "left" }, crops: [] },
+        { top_y: 900, bottom_y: 1000, detected_kind: SectionKinds::FOOTER, confidence: 0.6,
+          runner_up_kind: nil, features: { column_count: 1 }, crops: [] }
+      ])
+
+      post "/conversions/#{body['id']}/bands/#{footer_id}/split", params: { y: 900 }
+      expect(response).to have_http_status(:ok)
+
+      expect(
+        a_request(:post, %r{/v1/refeature}).with(
+          body: hash_including("is_first_band" => false, "is_last_band" => true)
+        )
+      ).to have_been_made
+    end
   end
 
   describe "POST .../remove and .../restore" do
