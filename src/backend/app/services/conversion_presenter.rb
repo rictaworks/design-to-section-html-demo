@@ -43,6 +43,6 @@ module ConversionPresenter
   end
 
   def notice_json(notice)
-    { notice_type: notice.notice_type, band_id: notice.band_id, detail: notice.detail }
+    { id: notice.id, notice_type: notice.notice_type, band_id: notice.band_id, detail: notice.detail }
   end
 end
