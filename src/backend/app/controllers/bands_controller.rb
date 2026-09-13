@@ -101,10 +101,10 @@ class BandsController < ApplicationController
   end
 
   # 結合・分割で対象になる帯（複数の場合はすべて）が、conversion全体の先頭／末尾の帯
-  # でもあるかどうか。positionは削除・置換済みの帯も含めて連番で維持されている
-  # （shift_positions_after参照）ため、常に信頼できる。
+  # でもあるかどうか。replaced帯はpositionを変えずに残る（shift_positions_after参照）ため、
+  # 除外しないと置換済みの古いpositionを最大値として拾ってしまうことがある。
   def max_band_position
-    @conversion.bands.maximum(:position)
+    @conversion.bands.listed.maximum(:position)
   end
 
   def call_refeature(ranges, is_first_band:, is_last_band:)

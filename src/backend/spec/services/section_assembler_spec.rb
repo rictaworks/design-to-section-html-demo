@@ -21,6 +21,16 @@ RSpec.describe SectionAssembler do
     expect(result.html).to include(">") # sanity: non-empty markup produced
   end
 
+  it "persists the freshly-resolved variant back onto the band, instead of leaving the stale value from band creation" do
+    conversion = create(:conversion)
+    band = create(:band, conversion: conversion, position: 0, detected_kind: SectionKinds::HEADER,
+      variant: SectionKinds::HEADER, features: { "button_blob_count" => 1 })
+
+    described_class.assemble(conversion.reload)
+
+    expect(band.reload.variant).to eq("with_button")
+  end
+
   it "assigns h1 to the hero band even when it is not first" do
     conversion = create(:conversion)
     create(:band, conversion: conversion, position: 0, detected_kind: SectionKinds::HEADER, variant: "without_button")

@@ -1,4 +1,4 @@
-import type { ConversionState, SectionKind } from "./types";
+import type { ConversionState, Notice, SectionKind } from "./types";
 
 export const messages = {
   site: {
@@ -93,9 +93,44 @@ export const messages = {
     confirm: "実行する",
     cancel: "キャンセル",
   },
+  notices: {
+    mobile_design_detected: "画像の縦横比から、モバイル幅のデザインとして処理しました。",
+    dark_theme_detected: "背景色を暗い配色（ダークテーマ）と判定し、その基準で処理しました。",
+    no_separator_found: "帯の区切りを検出できなかったため、画像全体を1つの帯として扱いました。",
+    band_count_exceeded: "帯の数が上限（40）を超えたため、最も低い帯から隣接する帯へ結合しました。",
+    sidebar_layout_detected:
+      "縦に貫く区切りを検出したため、サイドバー構成として簡易対応しました（サイドバー内部は簡易表示です）。",
+    header_split_from_hero: "先頭にある小さな要素の並びをヘッダーとして分離しました。",
+    low_confidence_kind: "種別判定の信頼度がやや低いため、内容をご確認ください。",
+    close_confidence_runner_up: "次点の種別「{{runner_up}}」とも僅差でした。",
+    generic_text_fallback: "種別を十分な信頼度で判定できなかったため、汎用テキストとして扱いました。",
+    variant_mismatch_fallback:
+      "帯の特徴とこの種別の組み合わせが標準的でなかったため、既定のバリアントを使用しました。",
+    embedding_budget_exceeded:
+      "画像の埋め込み容量の上限に達したため、一部の画像を縮小またはプレースホルダに置き換えました。",
+    analysis_timeout: "解析処理が30秒以内に完了しなかったため、変換を失敗として扱いました。",
+    analysis_unreachable: "解析サービスに接続できなかったため、変換を失敗として扱いました。",
+    daily_reset_interrupted: "日次リセットにより処理が中断されました。",
+    unknown: "生成に関する注意事項があります。",
+  } satisfies Record<string, string>,
 } as const;
 
 export function errorMessage(code: string): string {
   const table: Record<string, string> = messages.errors;
   return table[code] ?? messages.errors.unknown;
+}
+
+export function noticeText(notice: Pick<Notice, "notice_type" | "detail">): string {
+  const table: Record<string, string> = messages.notices;
+  const template = table[notice.notice_type] ?? messages.notices.unknown;
+  const runnerUpKind = notice.detail?.runner_up_kind;
+  if (
+    notice.notice_type === "close_confidence_runner_up" &&
+    typeof runnerUpKind === "string" &&
+    runnerUpKind in messages.sectionKindLabels
+  ) {
+    const label = messages.sectionKindLabels[runnerUpKind as SectionKind];
+    return template.replace("{{runner_up}}", label);
+  }
+  return template;
 }
