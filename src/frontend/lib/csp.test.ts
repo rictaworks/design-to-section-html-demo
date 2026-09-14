@@ -6,7 +6,7 @@ import { buildContentSecurityPolicy } from "./csp";
 describe("buildContentSecurityPolicy", () => {
   it("allows fetch to the configured backend origin via connect-src", () => {
     const csp = buildContentSecurityPolicy("https://backend.example.test/");
-    expect(csp).toMatch(/(^|; )connect-src 'self' https:\/\/backend\.example\.test(;|$)/);
+    expect(csp).toMatch(/(^|; )connect-src [^;]*https:\/\/backend\.example\.test/);
   });
 
   it("allows blob: images so the fetched source image can be displayed", () => {
@@ -16,7 +16,14 @@ describe("buildContentSecurityPolicy", () => {
 
   it("falls back to connect-src 'self' when the backend URL is not configured", () => {
     const csp = buildContentSecurityPolicy(undefined);
-    expect(csp).toMatch(/(^|; )connect-src 'self'(;|$)/);
+    expect(csp).toMatch(/(^|; )connect-src 'self'( |;|$)/);
+  });
+
+  it("allows loading and reporting to the shared GA4 tag (all demos)", () => {
+    const csp = buildContentSecurityPolicy("https://backend.example.test");
+    expect(csp).toMatch(/script-src [^;]*https:\/\/www\.googletagmanager\.com/);
+    expect(csp).toMatch(/connect-src [^;]*https:\/\/www\.google-analytics\.com/);
+    expect(csp).toMatch(/connect-src [^;]*https:\/\/analytics\.google\.com/);
   });
 
   it("keeps the restrictive baseline directives", () => {
