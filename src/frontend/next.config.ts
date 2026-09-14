@@ -1,14 +1,11 @@
 import type { NextConfig } from "next";
+import { buildContentSecurityPolicy } from "./lib/csp";
 
-// Next.js 16 (Turbopack) は script-src へのnonce自動付与に対応していないため、
-// strict-dynamic/nonce方式ではなくscript-src 'unsafe-inline'を許容する（フレームワーク自身の
-// hydrationスクリプトが動作しなくなるため）。他の各ディレクティブは既定で 'self' に制限し、
-// object-src・frame-ancestors相当（frame-src）等でクリックジャッキング・プラグイン起動を防ぐ。
+// CSP の方針と各ディレクティブの理由は lib/csp.ts を参照。
 const SECURITY_HEADERS = [
   {
     key: "Content-Security-Policy",
-    value:
-      "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'",
+    value: buildContentSecurityPolicy(process.env.NEXT_PUBLIC_BACKEND_URL),
   },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
