@@ -8,15 +8,21 @@
 // フロントエンドはブラウザから別オリジンの backend（NEXT_PUBLIC_BACKEND_URL）へ直接 fetch し、
 // 元画像は fetch した Blob を URL.createObjectURL で表示する。そのため connect-src に backend の
 // オリジン、img-src に blob: が必要（無いと本番で全通信が遮断され「通信に失敗しました」になる）。
+//
+// 全デモ共通のGA4タグ（googletagmanager.com からスクリプトを読み込み、google-analytics.com /
+// analytics.google.com へ計測を送信する）も許可する。
+const GA4_SCRIPT_HOST = "https://www.googletagmanager.com";
+const GA4_CONNECT_HOSTS = "https://www.google-analytics.com https://analytics.google.com";
+
 export function buildContentSecurityPolicy(backendUrl: string | undefined): string {
   const backendOrigin = backendUrl ? new URL(backendUrl).origin : undefined;
-  const connectSrc = ["'self'", backendOrigin].filter(Boolean).join(" ");
+  const connectSrc = ["'self'", backendOrigin, GA4_CONNECT_HOSTS].filter(Boolean).join(" ");
 
   return [
     "default-src 'self'",
     "img-src 'self' data: blob:",
     "style-src 'self' 'unsafe-inline'",
-    "script-src 'self' 'unsafe-inline'",
+    `script-src 'self' 'unsafe-inline' ${GA4_SCRIPT_HOST}`,
     `connect-src ${connectSrc}`,
     "frame-src 'self'",
     "object-src 'none'",
