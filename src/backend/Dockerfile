@@ -75,6 +75,7 @@ COPY --chown=rails:rails --from=build /rails /rails
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
-# Start server via Thruster by default, this can be overwritten at runtime
-EXPOSE 80
-CMD ["./bin/thrust", "./bin/rails", "server"]
+# Thruster は Gemfile に含めていない。Railway の healthcheck は注入された PORT を叩くため、
+# 代理サーバーを挟まず Puma が直接 $PORT（既定 3000）を待ち受ける（.claude/agents/railway-deploy-ops.md）。
+EXPOSE 3000
+CMD ["./bin/rails", "server"]
