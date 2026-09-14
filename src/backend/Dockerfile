@@ -48,6 +48,11 @@ RUN bundle install && \
 # Copy application code
 COPY . .
 
+# Windows ファイルシステム経由のクローンから `railway up` すると bin/* の実行ビットが失われ、
+# CRLF が混入することがある（Railway の CREATE_CONTAINER で「実行権限が無い」となる）。
+# デプロイ元 OS に依存せず起動できるよう、ここで両方を吸収する。
+RUN chmod +x bin/* && sed -i "s/\r$//g" bin/*
+
 # Precompile bootsnap code for faster boot times.
 # -j 1 disable parallel compilation to avoid a QEMU bug: https://github.com/rails/bootsnap/issues/495
 RUN bundle exec bootsnap precompile -j 1 app/ lib/
